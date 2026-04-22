@@ -18,15 +18,12 @@
   "dependencies": {
     "axios": "^1.6.7",
     "element-plus": "^2.6.1",
-    "emoji-regex": "^10.4.0",
     "github-markdown-css": "^5.8.1",
     "highlight.js": "^11.11.1",
     "markdown-it": "^14.1.0",
     "pinia": "^2.1.7",
     "vue": "^3.4.15",
-    "vue-axios": "^3.5.2",
-    "vue-router": "^4.2.5",
-    "vuex": "^4.1.0"
+    "vue-router": "^4.2.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.3",
@@ -58,7 +55,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "public/logo.ico",
@@ -80,7 +79,10 @@
       "artifactName": "${productName}-Setup-${version}.${ext}",
       "deleteAppDataOnUninstall": false,
       "runAfterFinish": true,
-      "installerLanguages": ["zh_CN", "en_US"]
+      "installerLanguages": [
+        "zh_CN",
+        "en_US"
+      ]
     },
     "mac": {
       "target": "dmg"

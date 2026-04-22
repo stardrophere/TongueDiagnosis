@@ -1,66 +1,81 @@
-<script setup lang="ts">
-import Bottom from "./dialogBox.vue";
-import Main from "./main.vue";
-import {ref} from 'vue'
+<script setup>
+import { ref, watch } from 'vue'
+import Main from './main.vue'
+import DialogBox from './dialogBox.vue'
 
-let sharedInput = ref('');
-const mainRef = ref(null)
+const props = defineProps({
+  messages: {
+    type: Array,
+    default: () => [],
+  },
+  mode: {
+    type: String,
+    default: 'empty',
+  },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+  canSend: {
+    type: Boolean,
+    default: false,
+  },
+  canUpload: {
+    type: Boolean,
+    default: false,
+  },
+  uploading: {
+    type: Boolean,
+    default: false,
+  },
+  streaming: {
+    type: Boolean,
+    default: false,
+  },
+})
+
+const emit = defineEmits(['submit-message', 'submit-image', 'request-draft'])
 const dialogRef = ref(null)
-const tempName = ref('')
 
-const handleSendToMain = (id: number, input: string) => {
-  sharedInput.value = `${id},${input}`;
-};
+/**
+ * 上传状态变化时，让底部进度提示组件同步开始或结束。
+ * 这个同步放在容器层，避免消息区和输入区互相直接依赖。
+ */
+watch(
+  () => props.uploading,
+  (uploading) => {
+    if (uploading) {
+      dialogRef.value?.startProgress?.()
+      return
+    }
 
-const handleSendPicture = (info) => {
-  initPage(info, tempName.value);
-};
-
-const initPage = (basePic, sessionName) => {
-  mainRef.value.initPage(basePic, sessionName);
-}
-
-const inputData = (data, id) => {
-  dialogRef.value.startChat()
-  mainRef.value.inputData(data, id);
-}
-
-const resetPage = () => {
-  mainRef.value.resetPage();
-  dialogRef.value.backUploading();
-}
-
-const setTempName = (name) => {
-  console.log(name);
-  tempName.value = name;
-}
-
-defineExpose({inputData, resetPage, setTempName})
-
-const handleGetReturn = (data) => {
-  dialogRef.value.getReturn(data);
-}
-
-const backIdToCheck = (id) => {
-  emit("back-id", id);
-}
-
-const emit = defineEmits(["back-id"])
+    dialogRef.value?.stopProgress?.()
+  },
+)
 </script>
 
 <template>
-  <div class="back-ground">
-    <div class="common-layout">
-      <Main :receivedInput="sharedInput" ref="mainRef" @get-return="handleGetReturn" @back-id="backIdToCheck"/>
-      <Bottom @send-to-main="handleSendToMain" @send-picture="handleSendPicture" ref="dialogRef"/>
-    </div>
+  <div class="workspace-column">
+    <Main :messages="messages" :mode="mode" :loading="loading" />
+    <DialogBox
+      ref="dialogRef"
+      :mode="mode"
+      :can-send="canSend"
+      :can-upload="canUpload"
+      :uploading="uploading"
+      :streaming="streaming"
+      @submit-message="emit('submit-message', $event)"
+      @submit-image="emit('submit-image', $event)"
+      @request-draft="emit('request-draft')"
+    />
   </div>
 </template>
 
 <style scoped>
-.back-ground {
-  height: 80vh;
-  background: linear-gradient(135deg, #4facfe, rgba(90, 224, 231, 0.9), #00d4a9, #00cba9);
-  background-size: 200% 200%;
+.workspace-column {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
 }
 </style>

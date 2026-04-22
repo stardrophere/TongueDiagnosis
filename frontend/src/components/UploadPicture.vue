@@ -1,80 +1,101 @@
-<script setup lang="ts">
-import {UploadFilled} from '@element-plus/icons-vue'
-import axios from "axios";
-import {ElMessage} from 'element-plus'
+<script setup>
+import { UploadFilled } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { uploadMaxSizeMb } from '@/config/appConfig'
 
-const emit = defineEmits(["success"])
+const emit = defineEmits(['selected'])
 
-let e;
-let base64String = "";
+/**
+ * 上传组件只负责挑选与预览，不直接发请求。
+ * 这样诊断页可以统一控制“何时开始分析”和错误提示策略。
+ */
+function handleFileChange(uploadFile) {
+  const file = uploadFile.raw
 
-function PicOnLoad(file) {
-  e = file;
-  const reader = new FileReader();
-  reader.onload = function (event) {
-    base64String = event.target?.result as string;
-  };
-  reader.readAsDataURL(file.raw);
-}
-
-async function handleSuccess(event) {
-  if (!e || !e.raw) {
-    console.error("未找到要上传的文件");
-    return;
+  if (!file) {
+    return false
   }
 
-  setTimeout(() => {
-    console.log("上传的文件：", e.raw);
-    emit("success", {success: true, base64: base64String, fileData: e.raw});
-  }, 600);
+  const allowTypes = ['image/jpeg', 'image/png', 'image/bmp', 'image/webp']
+  if (!allowTypes.includes(file.type)) {
+    ElMessage.warning('请上传 JPG、PNG、BMP 或 WEBP 格式的图片。')
+    return false
+  }
+
+  if (file.size / 1024 / 1024 > uploadMaxSizeMb) {
+    ElMessage.warning(`图片大小不能超过 ${uploadMaxSizeMb}MB。`)
+    return false
+  }
+
+  const reader = new FileReader()
+  reader.onload = (event) => {
+    emit('selected', {
+      file,
+      previewUrl: event.target?.result || '',
+      name: file.name,
+    })
+  }
+  reader.readAsDataURL(file)
+
+  return false
 }
 </script>
 
 <template>
   <el-upload
-      class="upload-demo"
-      drag
-      multiple
-      :on-change="PicOnLoad"
-      :http-request="handleSuccess"
-      accept=".jpg,.jpeg,.png,.bmp"
-      :show-file-list="false"
+    class="upload-demo"
+    drag
+    :auto-upload="false"
+    :show-file-list="false"
+    accept=".jpg,.jpeg,.png,.bmp,.webp"
+    :on-change="handleFileChange"
   >
     <el-icon class="el-icon--upload">
-      <upload-filled/>
+      <UploadFilled />
     </el-icon>
     <div class="el-upload__text">
-      Drag the file here or<em> Click here to upload a photo </em>
+      <strong>拖拽图片到这里</strong>
+      <p>或点击选择舌象图片，支持 JPG / PNG / BMP / WEBP</p>
     </div>
   </el-upload>
 </template>
 
 <style scoped>
 .upload-demo {
-  width: 400px;
-  height: 180px;
+  width: 100%;
+  min-height: 188px;
 }
 
-:deep(.el-upload-dragger) {
-  background-color: #f0f9ff;
-  border: 2px dashed #409eff;
-  border-radius: 8px;
-  color: #333;
-  height: 100%;
+::deep(.el-upload),
+::deep(.el-upload-dragger) {
+  width: 100%;
+}
+
+::deep(.el-upload-dragger) {
   display: flex;
+  min-height: 188px;
+  border: 1px dashed rgba(31, 138, 112, 0.35);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(244, 251, 248, 0.96));
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  color: var(--td-text-main);
 }
 
-:deep(.el-icon--upload) {
-  font-size: 50px;
-  color: #409eff;
+::deep(.el-icon--upload) {
+  margin-bottom: 16px;
+  font-size: 54px;
+  color: var(--td-primary-600);
 }
 
-:deep(.el-upload__text) {
-  font-size: 16px;
-  font-weight: bold;
-  color: #606266;
+::deep(.el-upload__text strong) {
+  display: block;
+  margin-bottom: 6px;
+}
+
+::deep(.el-upload__text p) {
+  margin: 0;
+  color: var(--td-text-muted);
 }
 </style>

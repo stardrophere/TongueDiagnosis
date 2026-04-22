@@ -1,36 +1,103 @@
 @import './base.css';
 
 #app {
-  /*max-width: 2200px;*/
+  min-height: 100vh;
+}
+
+.app-shell {
+  min-height: 100vh;
+  position: relative;
+}
+
+.app-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 10% 20%, rgba(31, 138, 112, 0.08), transparent 18%),
+    radial-gradient(circle at 90% 10%, rgba(95, 167, 255, 0.12), transparent 16%),
+    radial-gradient(circle at 70% 80%, rgba(125, 124, 244, 0.08), transparent 18%);
+  z-index: 0;
+}
+
+.app-main {
+  position: relative;
+  z-index: 1;
+  padding-top: 88px;
+}
+
+.page-section {
+  width: min(var(--td-max-width), calc(100% - 32px));
   margin: 0 auto;
-  padding: 2rem;
-  font-weight: normal;
 }
 
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
+.page-card {
+  border-radius: var(--td-radius-xl);
+  background: var(--td-panel-bg);
+  border: 1px solid var(--td-border-color);
+  box-shadow: var(--td-soft-shadow);
+  backdrop-filter: blur(18px);
 }
 
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
+.glass-card {
+  background: var(--td-panel-bg);
+  border: 1px solid var(--td-border-color);
+  box-shadow: var(--td-card-shadow);
+  backdrop-filter: blur(16px);
+}
+
+.section-title {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.15;
+  color: var(--td-text-main);
+}
+
+.section-subtitle {
+  margin: 0;
+  color: var(--td-text-secondary);
+  font-size: 16px;
+}
+
+.text-muted {
+  color: var(--td-text-muted);
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--td-primary-soft);
+  color: var(--td-primary-700);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.markdown-body {
+  color: var(--td-text-main);
+  background: transparent;
+}
+
+.markdown-body pre {
+  border-radius: 14px;
+  overflow: auto;
+}
+
+.markdown-body p:first-child {
+  margin-top: 0;
+}
+
+.markdown-body p:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .app-main {
+    padding-top: 80px;
   }
 }
-
-/*@media (min-width: 600px) {*/
-/*  body {*/
-/*    display: flex;*/
-/*    place-items: center;*/
-/*    place-items: center;*/
-/*  }*/
-
-/*  #app {*/
-/*    display: grid;*/
-/*    grid-template-columns: 1fr 1fr;*/
-/*    padding: 0 2rem;*/
-/*  }*/
-/*}*/

@@ -1,362 +1,313 @@
-<template>
-  <div
-      class="draggable-container"
-      :style="{ top: `${position.y}px`, left: `${position.x}px`, position: 'absolute', transition: 'top 0.s ease, left 0.s ease' }"
-      ref="draggableContainer"
-  >
-    <div v-if="sendPic" class="upload-wrapper">
-      <el-icon class="arrow-left">
-        <ArrowRightBold/>
-      </el-icon>
-      <div v-if="isUploading">
-        <Steps ref="stepRef"/>
-      </div>
-      <div v-else>
-        <UploadPicture @success="startQuest" style="margin-top: 5px"/>
-      </div>
-      <el-icon class="arrow-right">
-        <ArrowLeftBold/>
-      </el-icon>
-    </div>
-    <div class="drag-handle" @mousedown="startDrag" v-if="!sendPic">
-      <el-icon>
-        <Rank/>
-      </el-icon>
-    </div>
-    <input @keydown="handleKeyDown" class="message-input" v-model="inputValue" placeholder="Please enter here."
-           style="height: auto;" v-if="!sendPic">
-    <el-button type="success" :icon="Promotion" @click="sendToMain" size="large" style="font-size: 20px;" circle
-               v-if="!sendPic"/>
-    <el-button
-        :type="isRecording ? 'warning' : 'primary'"
-        :icon="isRecording ? CircleClose:Microphone"
-        @click="toggleVoiceRecognition"
-        size="large"
-        :loading="isLoading"
-        style="font-size: 20px;"
-        circle
-        v-if="!sendPic"
-    />
-  </div>
-</template>
+<script setup>
+import { computed, ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import { Microphone, Promotion, UploadFilled } from '@element-plus/icons-vue'
+import UploadPicture from '@/components/UploadPicture.vue'
+import Steps from '@/components/Steps.vue'
+import { useStateStore } from '@/stores/stateStore'
 
-<script setup lang="ts">
-import {ref, reactive, onBeforeMount, computed, nextTick} from 'vue'
-import {Promotion, Rank, Microphone, CircleClose, ArrowLeftBold, ArrowRightBold} from "@element-plus/icons-vue";
-import {ElMessage} from "element-plus";
-import {useStateStore} from '@/stores/stateStore';
-import UploadPicture from '@/components/UploadPicture.vue';
-import Steps from "@/components/Steps.vue";
-import axios from "axios";
+const props = defineProps({
+  mode: {
+    type: String,
+    default: 'empty',
+  },
+  canSend: {
+    type: Boolean,
+    default: false,
+  },
+  canUpload: {
+    type: Boolean,
+    default: false,
+  },
+  uploading: {
+    type: Boolean,
+    default: false,
+  },
+  streaming: {
+    type: Boolean,
+    default: false,
+  },
+})
 
-const stateStore = useStateStore();
-let sendPic = ref(true);
-let isUploading = ref(false);
-const stepRef = ref(null);
-const emit = defineEmits(['send-to-main', 'send-picture']);
-let inputValue = ref('');
-let ask_tip = 0;
-const sendToMain = () => {
-  emit('send-to-main', ask_tip, inputValue.value);
-  ask_tip += 1;
-  inputValue.value = '';
-};
+const emit = defineEmits(['submit-message', 'submit-image', 'request-draft'])
+const stateStore = useStateStore()
 
-const isRecording = ref(false);
-const isLoading = ref(false);
-const result = ref("");
+const inputValue = ref('')
+const selectedImage = ref(null)
+const uploadProgressRef = ref(null)
+const isListening = ref(false)
+let recognition = null
 
-let baseURL = '';
-onBeforeMount(() => {
-  if (stateStore.baseUrl == "0") {
-    ErrorPop("Please set an url", 5000)
+const canStartImageAnalysis = computed(() => props.canUpload && Boolean(selectedImage.value) && !props.uploading)
+
+/**
+ * 选择图片后只在本地暂存，真正发起诊断由用户点击按钮确认。
+ */
+function handleImageSelected(payload) {
+  selectedImage.value = payload
+}
+
+/**
+ * 草稿模式下点击“开始分析”才会真正触发上传，避免用户刚选错图就立即发请求。
+ */
+function submitImage() {
+  if (!selectedImage.value) {
+    ElMessage.warning('请先选择一张清晰的舌象图片。')
+    return
   }
-  baseURL = stateStore.baseUrl;
-});
-let recognition = null;
 
-const tongueDictionary = {
-  color: [
-    "舌色：淡白舌,",
-    "舌色：淡红舌,",
-    "舌色：红舌,",
-    "舌色：绛舌,",
-    "舌色：青紫舌,"
-  ],
-  outcolor: [
-    "舌苔颜色：白苔,",
-    "舌苔颜色：黄苔,",
-    "舌苔颜色：灰黑苔,"
-  ],
-  rot: [
-    "舌苔腻,",
-    "舌苔腐,"
-  ],
-  thick: [
-    "舌头薄,",
-    "舌头厚,"
-  ]
-};
+  emit('submit-image', selectedImage.value)
+}
 
-async function getRecordData() {
-  try {
-    const response = await axios.get('/user/record', {
-      headers: {
-        'Authorization': 'Bearer ' + localStorage.getItem('token')
-      }
-    });
-    return response.data
-  } catch (error) {
-    console.error('获取 /user/record 失败:', error);
-    return null;
+/**
+ * 发送追问前统一做空值清洗，避免把纯空格提交到后端。
+ */
+function submitMessage() {
+  const content = inputValue.value.trim()
+
+  if (!content) {
+    return
+  }
+
+  emit('submit-message', content)
+  inputValue.value = ''
+}
+
+function handleEnter(event) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault()
+    submitMessage()
   }
 }
 
-const toggleVoiceRecognition = () => {
-  if (isRecording.value) {
-    stopRecognition();
-  } else {
-    startRecognition();
+/**
+ * 初始化浏览器语音识别能力。
+ * 当前仅在 Chrome 系内核浏览器中较稳定，因此保留能力检测。
+ */
+function ensureRecognition() {
+  if (!stateStore.enableSpeechInput || recognition) {
+    return
   }
-};
 
-const resetLoading = () => {
-  stepRef.value.resetCountdown()
-}
+  if (!('webkitSpeechRecognition' in window)) {
+    return
+  }
 
-if ('webkitSpeechRecognition' in window) {
-  recognition = new webkitSpeechRecognition();
-  recognition.continuous = false; // 设为非连续模式
-  recognition.interimResults = false; // 只返回最终结果
-  recognition.lang = 'zh-CN'; // 设定语言为中文
+  recognition = new webkitSpeechRecognition()
+  recognition.continuous = false
+  recognition.interimResults = false
+  recognition.lang = 'zh-CN'
 
   recognition.onstart = () => {
-    isRecording.value = true;
-
-  };
+    isListening.value = true
+  }
 
   recognition.onresult = (event) => {
-    inputValue.value += event.results[0][0].transcript;
-  };
+    inputValue.value = `${inputValue.value}${event.results[0][0].transcript}`
+  }
 
-  recognition.onerror = (event) => {
-    ErrorPop('语音识别出错，请重试');
-  };
+  recognition.onerror = () => {
+    isListening.value = false
+    ElMessage.error('语音识别失败，请检查浏览器权限后重试。')
+  }
 
   recognition.onend = () => {
-    isRecording.value = false;
-  };
-} else {
-  console.warn('当前浏览器不支持语音识别');
+    isListening.value = false
+  }
 }
 
-const startRecognition = () => {
+function toggleSpeechInput() {
+  ensureRecognition()
 
-  if (recognition) {
-    recognition.start();
-    console.log("开始语音识别")
+  if (!recognition) {
+    ElMessage.warning('当前浏览器暂不支持语音输入。')
+    return
+  }
+
+  if (isListening.value) {
+    recognition.stop()
   } else {
-    ErrorPop('您的浏览器不支持语音识别');
-  }
-};
-
-const stopRecognition = () => {
-  if (recognition) {
-    console.log("停止语音识别")
-    recognition.stop();
-  }
-};
-
-let audioType = ref("De");
-
-interface Position {
-  x: number;
-  y: number;
-}
-
-interface Offset {
-  x: number;
-  y: number;
-}
-
-const position = reactive<Position>({x: window.innerWidth - 850, y: window.innerHeight - 250}) // 初始位置
-const offset = reactive<Offset>({x: 0, y: 0})
-let isDragging = ref<boolean>(false)
-const draggableContainer = ref<HTMLDivElement | null>(null)
-
-const startDrag = (event: MouseEvent): void => {
-  if (draggableContainer.value) {
-    const rect = draggableContainer.value.getBoundingClientRect()
-    isDragging.value = true
-    offset.x = event.clientX - rect.left
-    offset.y = event.clientY - rect.top
-    document.addEventListener('mousemove', onDrag)
-    document.addEventListener('mouseup', endDrag)
+    recognition.start()
   }
 }
 
-const onDrag = (event: MouseEvent): void => {
-  if (isDragging.value) {
-    position.x = Math.max(0, Math.min(event.clientX - offset.x, window.innerWidth - (draggableContainer.value?.offsetWidth || 0)));
-    position.y = Math.max(0, Math.min(event.clientY - offset.y, window.innerHeight - (draggableContainer.value?.offsetHeight || 0)));
-  }
-};
-
-const endDrag = (): void => {
-  isDragging.value = false
-  document.removeEventListener('mousemove', onDrag)
-  document.removeEventListener('mouseup', endDrag)
-}
-
-const handleKeyDown = (event: KeyboardEvent) => {
-  if (event.key === 'Enter') {
-    sendToMain();
-  }
-};
-
-const ErrorPop = (info: string, time = 3000) => {
-  ElMessage({
-    showClose: true,
-    message: info,
-    type: 'error',
-    duration: time
-  })
-}
-
-let pic64 = ref("")
-
-const startQuest = async (info) => {
-  if (info.success) {
-    pic64.value = info.base64
-  }
-  console.log("开始");
-  emit("send-picture", {base64: pic64.value,fileData: info.fileData})
-  startLoading();
-}
-
-async function pollGetRecord(interval = 2000, startTime = Date.now()) {
-  try {
-    const responseData = await getRecordData();
-    const data = responseData.data;
-
-    if (data && data[data.length - 1].state === 1) {
-      const endTime = Date.now(); // 记录结束时间
-      const elapsedTime = (endTime - startTime) / 1000; // 计算总耗时（秒）
-
-      console.log("✅ 获取到符合条件的数据:", data[data.length - 1].result);
-      console.log(`🎯 轮询耗时: ${elapsedTime.toFixed(2)} 秒`);
-      const result = data[data.length - 1].result
-      let ans = ''
-
-      ans += tongueDictionary.color[result.tongue_color]
-      ans += tongueDictionary.outcolor[result.coating_color]
-      ans += tongueDictionary.thick[result.tongue_thickness]
-      ans += tongueDictionary.rot[result.rot_greasy]
-      console.log(ans)
-      emit("send-picture", {base64: pic64.value, ans: ans})
-      startChat();
-
-
-      return data[data.length - 1].result;
-    }
-
-    console.log("🔄 数据不符合条件，继续轮询...");
-    setTimeout(() => pollGetRecord(interval, startTime), interval); // 递归调用继续轮询
-  } catch (error) {
-    console.error("❌ 轮询获取数据失败:", error);
-    setTimeout(() => pollGetRecord(interval, startTime), interval); // 发生错误时继续轮询
-  }
-}
-
-const backUploading = () => {
-  sendPic.value = true
-  isUploading.value = false
-}
-
-const startLoading = async () => {
-  isUploading.value = true
-  await nextTick()
-  resetLoading();
-}
-
-const startChat = () => {
-  sendPic.value = false
-  isUploading.value = false
-}
-
-const getReturn = (data) => {
-  if (data.success) startChat()
-  else backUploading()
-}
-defineExpose({startChat, startLoading, backUploading, getReturn})
+/**
+ * 上传状态切换时同步控制底部的步骤提示组件，让视觉反馈始终准确。
+ */
+defineExpose({
+  startProgress() {
+    uploadProgressRef.value?.start?.()
+  },
+  stopProgress() {
+    uploadProgressRef.value?.stop?.()
+  },
+  clearSelectedImage() {
+    selectedImage.value = null
+  },
+})
 </script>
 
+<template>
+  <section class="composer-shell page-card">
+    <template v-if="mode === 'empty'">
+      <div class="empty-actions">
+        <p>还没有创建诊断草稿，点击按钮开始一次新的舌诊分析。</p>
+        <el-button type="primary" size="large" @click="emit('request-draft')">
+          <el-icon><UploadFilled /></el-icon>
+          新建诊断并上传图片
+        </el-button>
+      </div>
+    </template>
+
+    <template v-else-if="mode === 'draft'">
+      <div class="upload-zone">
+        <div class="upload-copy">
+          <h3>上传本次舌象图片</h3>
+          <p>请选择一张清晰、无遮挡的舌象图片。选中图片后，点击“开始分析”即可创建正式会话。</p>
+        </div>
+
+        <UploadPicture @selected="handleImageSelected" />
+
+        <div v-if="selectedImage" class="selected-preview glass-card">
+          <img :src="selectedImage.previewUrl" alt="当前选择的图片预览" />
+          <div>
+            <strong>{{ selectedImage.name }}</strong>
+            <p>已完成本地预览，确认无误后即可开始分析。</p>
+          </div>
+        </div>
+
+        <el-button type="primary" size="large" :disabled="!canStartImageAnalysis" @click="submitImage">
+          开始分析图片
+        </el-button>
+
+        <Steps v-if="uploading" ref="uploadProgressRef" />
+      </div>
+    </template>
+
+    <template v-else>
+      <div class="chat-composer">
+        <el-input
+          v-model="inputValue"
+          type="textarea"
+          resize="none"
+          :autosize="{ minRows: 3, maxRows: 6 }"
+          placeholder="请输入要继续追问的问题，例如：这种舌象通常说明什么体质？后续应如何调理？"
+          @keydown="handleEnter"
+        />
+
+        <div class="composer-actions">
+          <div class="action-hint">
+            <span class="text-muted">支持继续追问症状、体质、作息建议与饮食方向。</span>
+          </div>
+
+          <div class="action-buttons">
+            <el-button
+              v-if="stateStore.enableSpeechInput"
+              size="large"
+              plain
+              :type="isListening ? 'warning' : 'default'"
+              @click="toggleSpeechInput"
+            >
+              <el-icon><Microphone /></el-icon>
+              {{ isListening ? '结束语音输入' : '语音输入' }}
+            </el-button>
+
+            <el-button type="primary" size="large" :disabled="!canSend || streaming" @click="submitMessage">
+              <el-icon><Promotion /></el-icon>
+              {{ streaming ? '回复生成中...' : '发送追问' }}
+            </el-button>
+          </div>
+        </div>
+      </div>
+    </template>
+  </section>
+</template>
+
 <style scoped>
-.draggable-container {
+.composer-shell {
+  padding: 20px;
+}
+
+.empty-actions,
+.upload-zone,
+.chat-composer {
   display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.empty-actions {
   align-items: center;
-  width: 550px;
-  background-color: #f5f5f5;
-  border-radius: 30px;
-  padding: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #ddd;
-  cursor: move;
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
   justify-content: center;
+  min-height: 180px;
+  text-align: center;
 }
 
-.draggable-container:hover {
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-  transform: translateY(-2px);
+.empty-actions p,
+.upload-copy p {
+  margin: 0;
+  color: var(--td-text-secondary);
 }
 
-.drag-handle {
-  margin-right: 10px;
-  cursor: grab;
+.upload-copy h3 {
+  margin: 0 0 6px;
+  color: var(--td-text-main);
 }
 
-.drag-handle img {
-  width: 24px;
-  height: 24px;
+.selected-preview {
+  display: flex;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 22px;
 }
 
-.message-input {
-  flex: 1;
-  border: none;
-  padding: 10px;
-  outline: none;
-  border-radius: 20px;
-  font-size: 16px;
-  font-family: 'Roboto', sans-serif;
-  line-height: 1.5;
-  background-color: transparent;
+.selected-preview img {
+  width: 112px;
+  height: 112px;
+  object-fit: cover;
+  border-radius: 18px;
 }
 
-.send-button svg {
-  fill: #000;
+.selected-preview strong {
+  color: var(--td-text-main);
 }
 
-.upload-wrapper {
+.selected-preview p {
+  margin: 6px 0 0;
+  color: var(--td-text-muted);
+}
+
+.composer-actions {
   display: flex;
   align-items: center;
-  gap: 20px;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.arrow-left, .arrow-right {
-  font-size: 24px;
-  color: #409eff;
-  cursor: pointer;
-}
-
-.arrow-left:hover, .arrow-right:hover {
-  color: #66b1ff;
-}
-
-.input-container {
+.action-buttons {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
+@media (max-width: 768px) {
+  .composer-shell {
+    padding: 16px;
+  }
+
+  .selected-preview,
+  .composer-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .selected-preview img {
+    width: 100%;
+    height: auto;
+    max-height: 220px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+}
 </style>

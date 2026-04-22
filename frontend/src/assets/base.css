@@ -1,86 +1,74 @@
-/* color palette from <https://github.com/vuejs/theme> */
 :root {
-  --vt-c-white: #ffffff;
-  --vt-c-white-soft: #f8f8f8;
-  --vt-c-white-mute: #f2f2f2;
-
-  --vt-c-black: #181818;
-  --vt-c-black-soft: #222222;
-  --vt-c-black-mute: #282828;
-
-  --vt-c-indigo: #2c3e50;
-
-  --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
-  --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
-  --vt-c-divider-dark-1: rgba(84, 84, 84, 0.65);
-  --vt-c-divider-dark-2: rgba(84, 84, 84, 0.48);
-
-  --vt-c-text-light-1: var(--vt-c-indigo);
-  --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
-  --vt-c-text-dark-1: var(--vt-c-white);
-  --vt-c-text-dark-2: rgba(235, 235, 235, 0.64);
-}
-
-/* semantic color variables for this project */
-:root {
-  --color-background: var(--vt-c-white);
-  --color-background-soft: var(--vt-c-white-soft);
-  --color-background-mute: var(--vt-c-white-mute);
-
-  --color-border: var(--vt-c-divider-light-2);
-  --color-border-hover: var(--vt-c-divider-light-1);
-
-  --color-heading: var(--vt-c-text-light-1);
-  --color-text: var(--vt-c-text-light-1);
-
-  --section-gap: 160px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: var(--vt-c-black);
-    --color-background-soft: var(--vt-c-black-soft);
-    --color-background-mute: var(--vt-c-black-mute);
-
-    --color-border: var(--vt-c-divider-dark-2);
-    --color-border-hover: var(--vt-c-divider-dark-1);
-
-    --color-heading: var(--vt-c-text-dark-1);
-    --color-text: var(--vt-c-text-dark-2);
-  }
+  color-scheme: light;
+  --td-bg: #f4f8f6;
+  --td-bg-elevated: rgba(255, 255, 255, 0.74);
+  --td-surface: #ffffff;
+  --td-panel-bg: rgba(255, 255, 255, 0.76);
+  --td-panel-strong: rgba(255, 255, 255, 0.92);
+  --td-primary-700: #166f5f;
+  --td-primary-600: #1f8a70;
+  --td-primary-500: #3aa58f;
+  --td-primary-soft: rgba(31, 138, 112, 0.12);
+  --td-secondary-500: #5fa7ff;
+  --td-accent-500: #7d7cf4;
+  --td-success-500: #1f9d6a;
+  --td-warning-500: #e5a533;
+  --td-danger-500: #dd5c5c;
+  --td-text-main: #17342f;
+  --td-text-secondary: #355e57;
+  --td-text-muted: #6c8f88;
+  --td-border-color: rgba(23, 52, 47, 0.08);
+  --td-border-strong: rgba(31, 138, 112, 0.18);
+  --td-page-gradient:
+    radial-gradient(circle at top left, rgba(95, 167, 255, 0.18), transparent 35%),
+    radial-gradient(circle at 85% 10%, rgba(125, 124, 244, 0.14), transparent 24%),
+    linear-gradient(180deg, #f7fbfa 0%, #eef6f3 100%);
+  --td-soft-shadow: 0 18px 48px rgba(24, 70, 60, 0.09);
+  --td-card-shadow: 0 14px 34px rgba(22, 74, 62, 0.08);
+  --td-header-shadow: 0 8px 30px rgba(24, 68, 59, 0.08);
+  --td-radius-xl: 28px;
+  --td-radius-lg: 22px;
+  --td-radius-md: 16px;
+  --td-radius-sm: 12px;
+  --td-max-width: 1240px;
 }
 
 *,
 *::before,
 *::after {
   box-sizing: border-box;
-  margin: 0;
-  font-weight: normal;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   min-height: 100vh;
-  color: var(--color-text);
-  background: var(--color-background);
-  transition:
-    color 0.5s,
-    background-color 0.5s;
+  margin: 0;
+  color: var(--td-text-main);
+  background: var(--td-page-gradient);
   line-height: 1.6;
   font-family:
+    'PingFang SC',
+    'Microsoft YaHei',
     Inter,
     -apple-system,
     BlinkMacSystemFont,
     'Segoe UI',
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    'Fira Sans',
-    'Droid Sans',
-    'Helvetica Neue',
     sans-serif;
   font-size: 15px;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
 }

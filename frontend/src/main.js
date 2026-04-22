@@ -1,41 +1,22 @@
 import './assets/main.css'
-import {createApp} from 'vue'
-import {createPinia} from 'pinia'
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import App from './App.vue'
 import router from './router'
-import axios from 'axios'
-import VueAxios from 'vue-axios'
-import settings from './config/config.js'
-
-let token = localStorage.getItem('token');
-
-axios.defaults.baseURL = settings.ServerUrl + '/api';
-axios.defaults.headers = {
-    Authorization: "Bearer " + token
-}
 
 const app = createApp(App)
-app.use(ElementPlus, {size: 'small', zIndex: 3000})
-app.use(createPinia())
-app.use(router)
-app.use(VueAxios, axios)
-app.config.globalProperties.$axios = axios
-app.mount('#app')
+const pinia = createPinia()
 
-router.beforeEach((to, from, next) => {
-    // Using the route guard, if the user is not logged in, they will be redirected to the login page.
-    if (to.matched.some((auth) => auth.meta.requireAuth)) {
-        let token = localStorage.getItem("token");
-        if (token) {
-            next();
-        } else {
-            next({
-                path: '/register'
-            });
-        }
-    } else {
-        next();
-    }
+/**
+ * 入口层只负责挂载应用与基础能力，
+ * 鉴权与请求逻辑已迁移到 router / services 中统一管理。
+ */
+app.use(ElementPlus, {
+  size: 'default',
+  zIndex: 3000,
 })
+app.use(pinia)
+app.use(router)
+app.mount('#app')
