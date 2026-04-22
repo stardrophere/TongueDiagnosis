@@ -1,7 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Microphone, Promotion, UploadFilled } from '@element-plus/icons-vue'
+import { Message as ElMessage } from '@/utils/message'
 import UploadPicture from '@/components/UploadPicture.vue'
 import Steps from '@/components/Steps.vue'
 import { useStateStore } from '@/stores/stateStore'
@@ -151,10 +150,9 @@ defineExpose({
     <template v-if="mode === 'empty'">
       <div class="empty-actions">
         <p>还没有创建诊断草稿，点击按钮开始一次新的舌诊分析。</p>
-        <el-button type="primary" size="large" @click="emit('request-draft')">
-          <el-icon><UploadFilled /></el-icon>
+        <button type="button" class="btn-primary btn-large" @click="emit('request-draft')">
           新建诊断并上传图片
-        </el-button>
+        </button>
       </div>
     </template>
 
@@ -175,9 +173,9 @@ defineExpose({
           </div>
         </div>
 
-        <el-button type="primary" size="large" :disabled="!canStartImageAnalysis" @click="submitImage">
+        <button type="button" class="btn-primary btn-large" :disabled="!canStartImageAnalysis" @click="submitImage">
           开始分析图片
-        </el-button>
+        </button>
 
         <Steps v-if="uploading" ref="uploadProgressRef" />
       </div>
@@ -185,15 +183,13 @@ defineExpose({
 
     <template v-else>
       <div class="chat-composer">
-        <el-input
+        <textarea
           v-model="inputValue"
-          type="textarea"
-          resize="none"
-          :autosize="{ minRows: 3, maxRows: 6 }"
+          rows="3"
           placeholder="请输入要继续追问的问题，例如：这种舌象通常说明什么体质？后续应如何调理？"
           @keydown="handleEnter"
           class="custom-textarea"
-        />
+        ></textarea>
 
         <div class="composer-actions">
           <div class="action-hint">
@@ -201,21 +197,19 @@ defineExpose({
           </div>
 
           <div class="action-buttons">
-            <el-button
+            <button
               v-if="stateStore.enableSpeechInput"
-              size="large"
-              plain
-              :type="isListening ? 'warning' : 'default'"
+              type="button"
+              class="btn-outline btn-large"
+              :class="{ 'is-listening': isListening }"
               @click="toggleSpeechInput"
             >
-              <el-icon><Microphone /></el-icon>
               {{ isListening ? '结束语音输入' : '语音输入' }}
-            </el-button>
+            </button>
 
-            <el-button type="primary" size="large" :disabled="!canSend || streaming" @click="submitMessage">
-              <el-icon><Promotion /></el-icon>
+            <button type="button" class="btn-primary btn-large" :disabled="!canSend || streaming" @click="submitMessage">
               {{ streaming ? '回复生成中...' : '发送追问' }}
-            </el-button>
+            </button>
           </div>
         </div>
       </div>
@@ -289,13 +283,64 @@ defineExpose({
   gap: 12px;
 }
 
-:deep(.custom-textarea .el-textarea__inner) {
-  background: var(--td-surface);
-  border-color: var(--td-border-color);
-  color: var(--td-text-main);
+.btn-large {
+  min-height: 40px;
+  padding: 0 24px;
+  font-size: 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-weight: 500;
 }
 
-:deep(.custom-textarea .el-textarea__inner:focus) {
+.btn-primary {
+  background: var(--td-primary-500);
+  color: white;
+  border: none;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--td-primary-600);
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--td-text-main);
+  border: 1px solid var(--td-border-color);
+}
+.btn-outline:hover {
+  border-color: var(--td-primary-500);
+  color: var(--td-primary-500);
+}
+.btn-outline.is-listening {
+  color: var(--td-warning-500);
+  border-color: var(--td-warning-500);
+}
+
+.custom-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--td-surface);
+  border: 1px solid var(--td-border-color);
+  color: var(--td-text-main);
+  font-size: 15px;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 80px;
+  max-height: 200px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.custom-textarea:focus {
+  outline: none;
   border-color: var(--td-primary-500);
 }
 
@@ -320,12 +365,12 @@ defineExpose({
     flex-direction: column;
   }
 
-  .action-buttons .el-button {
+  .action-buttons button {
     width: 100%;
     margin: 0;
   }
 
-  .action-buttons .el-button + .el-button {
+  .action-buttons button + button {
     margin-top: 12px;
   }
 }

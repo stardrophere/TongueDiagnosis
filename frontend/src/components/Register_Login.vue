@@ -1,6 +1,6 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { Message as ElMessage } from '@/utils/message'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import { appMeta } from '@/config/appConfig'
@@ -9,7 +9,6 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-const formRef = ref()
 const activeTab = ref(route.meta?.authMode === 'register' ? 'register' : 'login')
 const submitting = ref(false)
 
@@ -24,94 +23,63 @@ const registerForm = reactive({
   confirmPassword: '',
 })
 
-/**
- * 校验邮箱格式
- */
-function validateEmail(_rule, value, callback) {
-  const email = String(value || '').trim()
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const errors = reactive({
+  email: '',
+  password: '',
+  confirmPassword: ''
+})
 
-  if (!email) {
-    callback(new Error('请输入邮箱地址。'))
-    return
-  }
-
-  if (!emailRegex.test(email)) {
-    callback(new Error('请输入有效的邮箱地址。'))
-    return
-  }
-
-  callback()
-}
-
-/**
- * 校验密码格式
- */
-function validatePassword(_rule, value, callback) {
-  const password = String(value || '')
-  const pattern = /^[a-zA-Z0-9]+$/
-
-  if (!password) {
-    callback(new Error('请输入密码。'))
-    return
-  }
-
-  if (password.length < 6) {
-    callback(new Error('密码长度不能少于 6 位。'))
-    return
-  }
-
-  if (password.length > 20) {
-    callback(new Error('密码长度不能超过 20 位。'))
-    return
-  }
-
-  if (!pattern.test(password)) {
-    callback(new Error('密码暂仅支持英文与数字组合。'))
-    return
-  }
-
-  callback()
-}
-
-/**
- * 校验二次密码是否一致
- */
-function validateConfirmPassword(_rule, value, callback) {
-  if (!value) {
-    callback(new Error('请再次输入密码。'))
-    return
-  }
-
-  if (value !== registerForm.password) {
-    callback(new Error('两次输入的密码不一致。'))
-    return
-  }
-
-  callback()
-}
-
-const loginRules = {
-  email: [{ validator: validateEmail, trigger: 'blur' }],
-  password: [{ validator: validatePassword, trigger: 'blur' }],
-}
-
-const registerRules = {
-  email: [{ validator: validateEmail, trigger: 'blur' }],
-  password: [{ validator: validatePassword, trigger: 'blur' }],
-  confirmPassword: [{ validator: validateConfirmPassword, trigger: 'blur' }],
-}
-
-const currentRules = computed(() => (activeTab.value === 'login' ? loginRules : registerRules))
 const currentForm = computed(() => (activeTab.value === 'login' ? loginForm : registerForm))
 const redirectPath = computed(() => String(route.query.redirect || '/check'))
 
-/**
- * 切换登录/注册页签
- */
+function validateForm() {
+  let valid = true
+  errors.email = ''
+  errors.password = ''
+  errors.confirmPassword = ''
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!currentForm.value.email.trim()) {
+    errors.email = '请输入邮箱地址。'
+    valid = false
+  } else if (!emailRegex.test(currentForm.value.email.trim())) {
+    errors.email = '请输入有效的邮箱地址。'
+    valid = false
+  }
+
+  const pattern = /^[a-zA-Z0-9]+$/
+  if (!currentForm.value.password) {
+    errors.password = '请输入密码。'
+    valid = false
+  } else if (currentForm.value.password.length < 6) {
+    errors.password = '密码长度不能少于 6 位。'
+    valid = false
+  } else if (currentForm.value.password.length > 20) {
+    errors.password = '密码长度不能超过 20 位。'
+    valid = false
+  } else if (!pattern.test(currentForm.value.password)) {
+    errors.password = '密码暂仅支持英文与数字组合。'
+    valid = false
+  }
+
+  if (activeTab.value === 'register') {
+    if (!registerForm.confirmPassword) {
+      errors.confirmPassword = '请再次输入密码。'
+      valid = false
+    } else if (registerForm.confirmPassword !== registerForm.password) {
+      errors.confirmPassword = '两次输入的密码不一致。'
+      valid = false
+    }
+  }
+
+  return valid
+}
+
 function switchTab(tab) {
   activeTab.value = tab
-  formRef.value?.clearValidate?.()
+  errors.email = ''
+  errors.password = ''
+  errors.confirmPassword = ''
 
   const targetPath = tab === 'register' ? '/register' : '/login'
   if (route.path !== targetPath) {
@@ -130,37 +98,18 @@ watch(
   { immediate: true },
 )
 
-/**
- * 解析后端认证错误信息
- */
 function resolveAuthMessage(result, mode) {
   if (mode === 'login') {
-    if (result.code === 101) {
-      return '该账号尚未注册，请先完成注册。'
-    }
-
-    if (result.code === 102) {
-      return '密码错误，请重新输入。'
-    }
-
+    if (result.code === 101) return '该账号尚未注册，请先完成注册。'
+    if (result.code === 102) return '密码错误，请重新输入。'
     return result.message || '登录失败，请稍后重试。'
   }
-
-  if (result.code === 101) {
-    return '该邮箱已经注册，请直接登录。'
-  }
-
+  if (result.code === 101) return '该邮箱已经注册，请直接登录。'
   return result.message || '注册失败，请稍后重试。'
 }
 
-/**
- * 处理登录表单提交
- */
 async function handleLogin() {
-  const valid = await formRef.value.validate().catch(() => false)
-  if (!valid) {
-    return
-  }
+  if (!validateForm()) return
 
   submitting.value = true
 
@@ -186,14 +135,8 @@ async function handleLogin() {
   }
 }
 
-/**
- * 处理注册表单提交
- */
 async function handleRegister() {
-  const valid = await formRef.value.validate().catch(() => false)
-  if (!valid) {
-    return
-  }
+  if (!validateForm()) return
 
   submitting.value = true
 
@@ -222,16 +165,12 @@ async function handleRegister() {
   }
 }
 
-/**
- * 统一提交入口
- */
 function handleSubmit() {
   if (activeTab.value === 'login') {
     handleLogin()
-    return
+  } else {
+    handleRegister()
   }
-
-  handleRegister()
 }
 </script>
 
@@ -242,21 +181,21 @@ function handleSubmit() {
         <span class="status-chip">智能诊断入口</span>
         <h1 class="section-title">{{ appMeta.name }}</h1>
         <p class="section-subtitle">
-          重新设计后的认证流程以“快速进入诊断工作台”为目标，减少跳转、混乱动画与无意义视觉噪音。
+          欢迎使用中医舌象辅助分析平台。请登录或注册您的专属账号，开启智能诊断体验。
         </p>
 
         <div class="copy-list">
           <article class="copy-item glass-card">
-            <strong>统一中文反馈</strong>
-            <span>登录、注册、鉴权失效与异常情况都将给出明确中文提示。</span>
+            <strong>安全可靠</strong>
+            <span>您的所有诊断记录和个人数据都将经过严格保护，保障您的隐私安全。</span>
           </article>
           <article class="copy-item glass-card">
-            <strong>移动端友好</strong>
-            <span>认证卡片与说明区会自动折叠重排，避免旧版布局在小屏上挤压变形。</span>
+            <strong>多端同步</strong>
+            <span>支持在不同设备上登录，无缝同步您的舌象档案与历史会话记录。</span>
           </article>
           <article class="copy-item glass-card">
-            <strong>更稳定的跳转逻辑</strong>
-            <span>未登录访问诊断页会自动回跳登录页，登录成功后继续回到目标页面。</span>
+            <strong>智能高效</strong>
+            <span>快速进入工作台，毫秒级获取中医证候分析与针对性的调理建议。</span>
           </article>
         </div>
       </div>
@@ -287,46 +226,47 @@ function handleSubmit() {
           </div>
         </div>
 
-        <el-form
-          ref="formRef"
-          class="auth-form"
-          :model="currentForm"
-          :rules="currentRules"
-          label-position="top"
-        >
-          <el-form-item label="邮箱地址" prop="email">
-            <el-input
+        <form class="auth-form" @submit.prevent="handleSubmit">
+          <div class="form-group">
+            <label class="form-label">邮箱地址</label>
+            <input
               v-model="currentForm.email"
-              size="large"
+              type="text"
+              class="form-input"
               placeholder="请输入常用邮箱"
-              clearable
+              :class="{ 'is-error': errors.email }"
             />
-          </el-form-item>
+            <span v-if="errors.email" class="error-msg">{{ errors.email }}</span>
+          </div>
 
-          <el-form-item label="登录密码" prop="password">
-            <el-input
+          <div class="form-group">
+            <label class="form-label">登录密码</label>
+            <input
               v-model="currentForm.password"
-              size="large"
+              type="password"
+              class="form-input"
               placeholder="请输入密码"
-              type="password"
-              show-password
+              :class="{ 'is-error': errors.password }"
             />
-          </el-form-item>
+            <span v-if="errors.password" class="error-msg">{{ errors.password }}</span>
+          </div>
 
-          <el-form-item v-if="activeTab === 'register'" label="确认密码" prop="confirmPassword">
-            <el-input
+          <div v-if="activeTab === 'register'" class="form-group">
+            <label class="form-label">确认密码</label>
+            <input
               v-model="registerForm.confirmPassword"
-              size="large"
-              placeholder="请再次输入密码"
               type="password"
-              show-password
+              class="form-input"
+              placeholder="请再次输入密码"
+              :class="{ 'is-error': errors.confirmPassword }"
             />
-          </el-form-item>
+            <span v-if="errors.confirmPassword" class="error-msg">{{ errors.confirmPassword }}</span>
+          </div>
 
           <div class="auth-actions">
-            <el-button type="primary" size="large" :loading="submitting" @click="handleSubmit">
+            <button type="submit" class="btn-primary btn-large" :disabled="submitting">
               {{ activeTab === 'login' ? '登录并进入工作台' : '注册账号' }}
-            </el-button>
+            </button>
             <p class="helper-text">
               {{
                 activeTab === 'login'
@@ -335,7 +275,7 @@ function handleSubmit() {
               }}
             </p>
           </div>
-        </el-form>
+        </form>
       </div>
     </div>
   </section>
@@ -432,6 +372,46 @@ function handleSubmit() {
 .auth-form {
   display: flex;
   flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-size: 14px;
+  color: var(--td-text-main);
+  font-weight: 500;
+}
+
+.form-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid var(--td-border-color);
+  background: var(--td-surface);
+  color: var(--td-text-main);
+  font-size: 15px;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--td-primary-500);
+}
+
+.form-input.is-error {
+  border-color: var(--td-danger-500);
+}
+
+.error-msg {
+  color: var(--td-danger-500);
+  font-size: 12px;
 }
 
 .auth-actions {
@@ -439,6 +419,34 @@ function handleSubmit() {
   flex-direction: column;
   gap: 12px;
   margin-top: 8px;
+}
+
+.btn-large {
+  width: 100%;
+  height: 44px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary {
+  background: var(--td-primary-500);
+  color: white;
+  border: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--td-primary-600);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .helper-text {

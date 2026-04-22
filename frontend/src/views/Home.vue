@@ -5,124 +5,118 @@ import { useAuthStore } from '@/stores/authStore'
 const authStore = useAuthStore()
 
 const ctaTarget = computed(() => (authStore.isAuthenticated ? '/check' : '/register'))
-const ctaLabel = computed(() => (authStore.isAuthenticated ? '进入智能诊断' : '注册并开始体验'))
+const ctaLabel = computed(() => (authStore.isAuthenticated ? '进入工作台' : '免费开始使用'))
 
-const highlights = [
+const features = [
   {
-    title: 'AI 舌象分析',
-    description: '上传舌象图片后，系统会自动生成首轮分析内容，并支持继续追问细节。',
+    icon: '✨',
+    title: 'AI 驱动诊断',
+    description: '上传舌象图片，毫秒级生成多维度的中医证候分析报告。'
   },
   {
+    icon: '💬',
     title: '会话式追问',
-    description: '诊断结果不是一次性文本，而是可持续沟通的结构化诊断会话。',
+    description: '不仅是结果呈现，更支持随时追问细节，获取深度健康指导。'
   },
   {
-    title: '记录可追溯',
-    description: '所有诊断记录都会在左侧归档，便于后续复盘、对比与继续咨询。',
-  },
-]
-
-const steps = [
-  '创建新的诊断记录并命名本次会话。',
-  '上传清晰的舌象图片，等待系统生成首轮分析。',
-  '围绕症状、体质和建议继续追问，获取更完整的解释。',
-]
-
-const advantages = [
-  '界面文案、提示语与按钮语义全面中文化，更贴合中医与国内用户场景。',
-  '诊断页围绕“记录管理 + 上传分析 + 继续追问”进行整体重构，减少无效操作。',
-  '请求层、鉴权流与核心逻辑统一收敛，后续维护和扩展会更稳定。',
+    icon: '📊',
+    title: '云端档案',
+    description: '所有诊断记录安全归档，轻松进行历史对比与病情复盘。'
+  }
 ]
 </script>
 
 <template>
-  <div class="home-page">
-    <section class="hero-section page-section">
-      <div class="hero-shell page-card">
-        <div class="hero-copy">
-          <span class="status-chip">中医舌象辅助分析平台</span>
-          <h1 class="section-title">让舌诊流程更专业、更清晰，也更适合持续追问。</h1>
-          <p class="section-subtitle">
-            面向舌象图像分析场景重构的 AI 前端工作台，聚焦“上传即分析、结果可追问、记录可回看”的完整使用闭环。
-          </p>
-
-          <div class="hero-actions">
-            <router-link :to="ctaTarget" class="hero-primary">
-              {{ ctaLabel }}
-            </router-link>
-            <router-link to="/home#workflow" class="hero-secondary">
-              先了解诊断流程
-            </router-link>
-          </div>
-
-          <div class="hero-metrics">
-            <div class="metric-card glass-card">
-              <strong>中文化</strong>
-              <span>全站文案、提示语与操作反馈统一梳理</span>
-            </div>
-            <div class="metric-card glass-card">
-              <strong>可追问</strong>
-              <span>基于诊断会话继续补充症状、追问建议</span>
-            </div>
-            <div class="metric-card glass-card">
-              <strong>可维护</strong>
-              <span>请求层、鉴权流与诊断逻辑统一收敛</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="hero-panel glass-card">
-          <div class="panel-top">
-            <div>
-              <p class="panel-label">体验升级重点</p>
-              <h2>从“能用”提升为“可信赖的医疗工具界面”</h2>
-            </div>
-            <span class="panel-badge">新版工作台</span>
-          </div>
-
-          <div class="panel-list">
-            <article v-for="item in highlights" :key="item.title" class="panel-item">
-              <h3>{{ item.title }}</h3>
-              <p>{{ item.description }}</p>
-            </article>
-          </div>
-        </div>
+  <div class="premium-home">
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="hero-background">
+        <div class="glow-orb primary"></div>
+        <div class="glow-orb secondary"></div>
       </div>
-    </section>
-
-    <section id="workflow" class="workflow-section page-section">
-      <div class="section-head">
-        <span class="status-chip">操作流程</span>
-        <h2 class="section-title">三步完成一次更顺畅的舌诊体验</h2>
-        <p class="section-subtitle">
-          诊断页已经围绕新建记录、上传图片、继续追问重新组织，不再依赖割裂的英文按钮和松散逻辑。
+      <div class="hero-content">
+        <div class="badge">全新升级 2.0</div>
+        <h1 class="main-title">
+          懂你的<span class="gradient-text">中医 AI 助手</span>
+        </h1>
+        <p class="subtitle">
+          将传统舌诊与先进人工智能相结合。提供上传即分析、结果可追问、记录可回看的一站式个人健康管理体验。
         </p>
-      </div>
-
-      <div class="workflow-grid">
-        <article v-for="(item, index) in steps" :key="item" class="workflow-card page-card">
-          <span class="workflow-index">0{{ index + 1 }}</span>
-          <p>{{ item }}</p>
-        </article>
+        <div class="action-group">
+          <router-link :to="ctaTarget" class="btn-premium">
+            {{ ctaLabel }} <span class="arrow">→</span>
+          </router-link>
+          <a href="#features" class="btn-outline">
+            了解详情
+          </a>
+        </div>
       </div>
     </section>
 
-    <section class="benefit-section page-section">
-      <div class="benefit-layout">
-        <div class="benefit-copy page-card">
-          <span class="status-chip">为什么值得使用</span>
-          <h2 class="section-title">不仅是视觉升级，更是整套诊断交互的重构</h2>
-          <ul class="benefit-list">
-            <li v-for="item in advantages" :key="item">{{ item }}</li>
+    <!-- Features Section -->
+    <section id="features" class="features-section">
+      <div class="section-header">
+        <h2 class="section-title">重塑舌诊体验</h2>
+        <p class="section-desc">每一个细节，都为了更精准、更流畅的诊断过程。</p>
+      </div>
+      <div class="feature-grid">
+        <div v-for="(item, idx) in features" :key="idx" class="feature-card">
+          <div class="feature-icon">{{ item.icon }}</div>
+          <h3 class="feature-title">{{ item.title }}</h3>
+          <p class="feature-desc">{{ item.description }}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Showcase / Workflow Section -->
+    <section class="workflow-section">
+      <div class="workflow-container">
+        <div class="workflow-text">
+          <h2>化繁为简，三步即达</h2>
+          <ul class="step-list">
+            <li>
+              <div class="step-number">01</div>
+              <div class="step-content">
+                <h4>创建会话记录</h4>
+                <p>为每一次诊断建立专属档案，方便日后回溯。</p>
+              </div>
+            </li>
+            <li>
+              <div class="step-number">02</div>
+              <div class="step-content">
+                <h4>上传舌象图片</h4>
+                <p>一键上传，系统自动提取特征，生成分析报告。</p>
+              </div>
+            </li>
+            <li>
+              <div class="step-number">03</div>
+              <div class="step-content">
+                <h4>自由追问建议</h4>
+                <p>针对体质、饮食、作息，向 AI 进一步获取调理方案。</p>
+              </div>
+            </li>
           </ul>
         </div>
-
-        <div class="disclaimer-card glass-card">
-          <span class="panel-badge warning">使用提醒</span>
-          <h3>本系统用于健康参考与辅助分析</h3>
-          <p>
-            舌象分析结果不应替代专业医师面诊、化验检查或正式医疗诊断。如存在明显不适或长期症状，请及时前往正规医疗机构就诊。
-          </p>
+        <div class="workflow-visual">
+          <div class="mockup-card">
+            <div class="mockup-header">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+            </div>
+            <div class="mockup-body">
+              <div class="mockup-chat">
+                <div class="mockup-msg ai">正在分析您的舌象特征...</div>
+                <div class="mockup-msg ai">
+                  <strong>诊断结果</strong><br/>
+                  舌色：淡红舌<br/>
+                  舌苔：薄白苔<br/>
+                  体质建议：建议保持规律作息...
+                </div>
+                <div class="mockup-msg user">这种体质适合吃什么？</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -130,210 +124,403 @@ const advantages = [
 </template>
 
 <style scoped>
-.home-page {
+.premium-home {
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  padding: 24px 0 48px;
+  align-items: center;
+  width: 100%;
+  overflow-x: hidden;
+  padding-bottom: 120px;
 }
 
-.hero-shell {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr);
-  gap: 24px;
-  padding: 32px;
+/* --- Hero Section --- */
+.hero-section {
+  position: relative;
+  width: 100%;
+  min-height: 85vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 120px 24px;
 }
 
-.hero-copy,
-.hero-panel,
-.benefit-copy {
-  padding: 28px;
+.hero-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: -1;
+  pointer-events: none;
 }
 
-.hero-copy {
+.glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.15;
+  animation: float 10s ease-in-out infinite alternate;
+}
+
+.glow-orb.primary {
+  width: 50vw;
+  height: 50vw;
+  max-width: 600px;
+  max-height: 600px;
+  background: var(--td-primary-500);
+  top: -10%;
+  left: -10%;
+}
+
+.glow-orb.secondary {
+  width: 40vw;
+  height: 40vw;
+  max-width: 500px;
+  max-height: 500px;
+  background: var(--td-secondary-500);
+  bottom: 10%;
+  right: -5%;
+  animation-delay: -5s;
+}
+
+@keyframes float {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(30px, 50px) scale(1.1); }
+}
+
+.hero-content {
+  max-width: 800px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  align-items: center;
+  z-index: 1;
 }
 
-.hero-actions {
+.badge {
+  display: inline-flex;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: var(--td-primary-soft);
+  color: var(--td-primary-600);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-bottom: 32px;
+  border: 1px solid rgba(31, 138, 112, 0.1);
+}
+
+.main-title {
+  font-size: clamp(42px, 5vw, 68px);
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--td-text-main);
+  margin: 0 0 24px;
+  letter-spacing: -0.02em;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--td-primary-600), var(--td-secondary-500));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  font-size: clamp(16px, 2vw, 20px);
+  color: var(--td-text-secondary);
+  line-height: 1.6;
+  margin: 0 0 48px;
+  max-width: 600px;
+}
+
+.action-group {
   display: flex;
+  gap: 16px;
   flex-wrap: wrap;
-  gap: 12px;
+  justify-content: center;
 }
 
-.hero-primary,
-.hero-secondary {
+.btn-premium, .btn-outline {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 46px;
-  padding: 0 20px;
-  border-radius: 999px;
-  text-decoration: none;
+  height: 56px;
+  padding: 0 32px;
+  border-radius: 28px;
+  font-size: 16px;
   font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.hero-primary {
-  background: linear-gradient(135deg, var(--td-primary-600), var(--td-secondary-500));
+.btn-premium {
+  background: var(--td-primary-500);
   color: #fff;
-  box-shadow: 0 14px 28px var(--td-primary-soft);
+  box-shadow: 0 10px 24px rgba(31, 138, 112, 0.2);
+}
+.btn-premium:hover {
+  transform: translateY(-2px);
+  background: var(--td-primary-600);
+  box-shadow: 0 14px 32px rgba(31, 138, 112, 0.3);
+  color: #fff;
+}
+.btn-premium .arrow {
+  margin-left: 8px;
+  transition: transform 0.3s;
+}
+.btn-premium:hover .arrow {
+  transform: translateX(4px);
 }
 
-.hero-secondary {
-  border: 1px solid var(--td-border-strong);
-  background: var(--td-surface);
-  color: var(--td-primary-700);
-}
-
-.hero-metrics,
-.workflow-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.metric-card,
-.disclaimer-card {
-  padding: 20px;
-  border-radius: 24px;
-}
-
-.metric-card strong,
-.panel-item h3,
-.workflow-card p,
-.disclaimer-card h3 {
+.btn-outline {
+  background: transparent;
   color: var(--td-text-main);
+  border: 1px solid var(--td-border-strong);
 }
-
-.metric-card span,
-.panel-item p,
-.disclaimer-card p,
-.benefit-list li {
-  color: var(--td-text-secondary);
-}
-
-.panel-top,
-.section-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.panel-label {
-  margin: 0 0 8px;
-  color: var(--td-primary-600);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-}
-
-.panel-top h2 {
-  margin: 0;
-  font-size: 28px;
-  line-height: 1.2;
-}
-
-.panel-badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 32px;
-  padding: 0 12px;
-  border-radius: 999px;
-  background: var(--td-primary-soft);
-  color: var(--td-secondary-500);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.panel-badge.warning {
-  background: rgba(229, 165, 51, 0.14);
-  color: var(--td-warning-500);
-}
-
-.panel-list {
-  display: grid;
-  gap: 14px;
-  margin-top: 20px;
-}
-
-.panel-item {
-  padding: 18px;
-  border-radius: 18px;
+.btn-outline:hover {
   background: var(--td-surface);
-  border: 1px solid var(--td-border-color);
+  border-color: var(--td-text-main);
 }
 
-.panel-item h3 {
-  margin: 0 0 8px;
+/* --- Features Section --- */
+.features-section {
+  max-width: 1200px;
+  width: 100%;
+  padding: 0 24px;
+  margin-bottom: 120px;
 }
 
-.workflow-card {
-  padding: 22px;
+.section-header {
+  text-align: center;
+  margin-bottom: 64px;
 }
 
-.workflow-index {
-  display: inline-flex;
-  margin-bottom: 14px;
-  color: var(--td-accent-500);
-  font-size: 24px;
-  font-weight: 800;
+.section-title {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--td-text-main);
+  margin: 0 0 16px;
 }
 
-.benefit-layout {
+.section-desc {
+  font-size: 18px;
+  color: var(--td-text-secondary);
+  margin: 0;
+}
+
+.feature-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 24px;
 }
 
-.benefit-list {
-  margin: 20px 0 0;
-  padding-left: 18px;
+.feature-card {
+  background: var(--td-surface);
+  border: 1px solid var(--td-border-color);
+  border-radius: 24px;
+  padding: 40px 32px;
+  transition: all 0.3s ease;
 }
 
-.benefit-list li + li {
-  margin-top: 12px;
+.feature-card:hover {
+  border-color: var(--td-primary-500);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04);
+  transform: translateY(-4px);
 }
 
-@media (max-width: 1024px) {
-  .hero-shell,
-  .benefit-layout {
+.feature-icon {
+  font-size: 32px;
+  margin-bottom: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: var(--td-primary-soft);
+}
+
+.feature-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--td-text-main);
+  margin: 0 0 12px;
+}
+
+.feature-desc {
+  font-size: 15px;
+  color: var(--td-text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* --- Workflow Section --- */
+.workflow-section {
+  max-width: 1200px;
+  width: 100%;
+  padding: 0 24px;
+}
+
+.workflow-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+  background: var(--td-panel-bg);
+  border: 1px solid var(--td-border-color);
+  border-radius: 32px;
+  padding: 64px;
+  box-shadow: var(--td-soft-shadow);
+}
+
+.workflow-text h2 {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--td-text-main);
+  margin: 0 0 48px;
+}
+
+.step-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.step-list li {
+  display: flex;
+  gap: 20px;
+}
+
+.step-number {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--td-primary-600);
+  background: var(--td-primary-soft);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.step-content h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--td-text-main);
+  margin: 0 0 8px;
+}
+
+.step-content p {
+  font-size: 15px;
+  color: var(--td-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.workflow-visual {
+  display: flex;
+  justify-content: center;
+  perspective: 1000px;
+}
+
+.mockup-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--td-surface);
+  border: 1px solid var(--td-border-strong);
+  border-radius: 20px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transform: rotateY(-5deg) rotateX(5deg);
+  transition: transform 0.5s ease;
+}
+.mockup-card:hover {
+  transform: rotateY(0) rotateX(0);
+}
+
+.mockup-header {
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+  border-bottom: 1px solid var(--td-border-color);
+  background: var(--td-panel-bg);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.dot.red { background: #ff5f56; }
+.dot.yellow { background: #ffbd2e; }
+.dot.green { background: #27c93f; }
+
+.mockup-body {
+  padding: 20px;
+  background: var(--td-bg-main);
+}
+
+.mockup-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mockup-msg {
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 85%;
+}
+
+.mockup-msg.ai {
+  background: var(--td-panel-strong);
+  color: var(--td-text-main);
+  border: 1px solid var(--td-border-color);
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+
+.mockup-msg.user {
+  background: var(--td-primary-500);
+  color: #fff;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+@media (max-width: 900px) {
+  .workflow-container {
     grid-template-columns: 1fr;
+    padding: 40px 24px;
+    gap: 48px;
   }
-
-  .hero-metrics,
-  .workflow-grid {
-    grid-template-columns: 1fr;
+  .mockup-card {
+    transform: none;
   }
 }
 
-@media (max-width: 768px) {
-  .home-page {
-    gap: 24px;
-    padding-top: 16px;
+@media (max-width: 600px) {
+  .main-title {
+    font-size: 36px;
   }
-
-  .hero-shell,
-  .hero-copy,
-  .hero-panel,
-  .benefit-copy {
-    padding: 22px;
+  .hero-section {
+    min-height: 70vh;
+    padding-top: 100px;
   }
-
-  .panel-top,
-  .section-head {
+  .action-group {
     flex-direction: column;
-  }
-
-  .hero-actions {
-    flex-direction: column;
-  }
-
-  .hero-primary,
-  .hero-secondary {
     width: 100%;
-    margin-left: 0 !important;
+  }
+  .btn-premium, .btn-outline {
+    width: 100%;
   }
 }
 </style>

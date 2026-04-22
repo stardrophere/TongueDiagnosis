@@ -1,11 +1,10 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { Message as ElMessage } from '@/utils/message'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import { useStateStore } from '@/stores/stateStore'
 import { appMeta } from '@/config/appConfig'
-import { Moon, Sunny } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -14,6 +13,7 @@ const stateStore = useStateStore()
 
 const isScrolled = ref(false)
 const isMobileMenuOpen = ref(false)
+const isProfileDropdownOpen = ref(false)
 
 const navItems = [
   { label: '首页', path: '/home' },
@@ -41,6 +41,14 @@ function toggleMobileMenu() {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
 }
 
+function toggleProfileDropdown() {
+  isProfileDropdownOpen.value = !isProfileDropdownOpen.value
+}
+
+function closeProfileDropdown() {
+  isProfileDropdownOpen.value = false
+}
+
 /**
  * 静默获取用户资料
  */
@@ -62,24 +70,35 @@ async function ensureProfileSilently() {
 function handleLogout() {
   authStore.logout()
   closeMobileMenu()
+  closeProfileDropdown()
   ElMessage.success('您已安全退出登录。')
   router.push('/login')
+}
+
+// Click outside to close dropdown
+function handleClickOutside(event) {
+  if (isProfileDropdownOpen.value && !event.target.closest('.desktop-profile')) {
+    closeProfileDropdown()
+  }
 }
 
 onMounted(() => {
   handleScroll()
   ensureProfileSilently()
   window.addEventListener('scroll', handleScroll)
+  document.addEventListener('click', handleClickOutside)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleScroll)
+  document.removeEventListener('click', handleClickOutside)
 })
 
 watch(
   () => route.fullPath,
   () => {
     closeMobileMenu()
+    closeProfileDropdown()
     ensureProfileSilently()
   },
 )
@@ -111,31 +130,30 @@ watch(
       <div class="header-actions">
         <!-- 黑白模式切换按钮 -->
         <button type="button" class="theme-toggle" @click="stateStore.toggleDarkMode" :title="stateStore.isDarkMode ? '切换到浅色模式' : '切换到深色模式'">
-          <el-icon v-if="stateStore.isDarkMode"><Sunny /></el-icon>
-          <el-icon v-else><Moon /></el-icon>
+          <span class="icon-svg" v-if="stateStore.isDarkMode">☀️</span>
+          <span class="icon-svg" v-else>🌙</span>
         </button>
 
         <div v-if="isAuthenticated" class="desktop-profile">
-          <el-dropdown trigger="click">
-            <button type="button" class="profile-trigger">
+          <div class="custom-dropdown">
+            <button type="button" class="profile-trigger" @click="toggleProfileDropdown">
               <div class="profile-avatar">{{ userInitial }}</div>
               <div class="profile-copy">
                 <strong>{{ displayName }}</strong>
                 <span>智能诊断工作台</span>
               </div>
-              <el-icon><ArrowDown /></el-icon>
+              <span class="icon-svg">↓</span>
             </button>
 
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item disabled>
-                  {{ userProfile.email || '当前账号已登录' }}
-                </el-dropdown-item>
-                <el-dropdown-item @click="router.push('/check')">进入诊断页</el-dropdown-item>
-                <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+            <div v-if="isProfileDropdownOpen" class="dropdown-menu">
+              <div class="dropdown-item disabled">
+                {{ userProfile.email || '当前账号已登录' }}
+              </div>
+              <div class="dropdown-item" @click="router.push('/check')">进入诊断页</div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-item" @click="handleLogout">退出登录</div>
+            </div>
+          </div>
         </div>
 
         <div v-else class="auth-entry">
@@ -144,8 +162,8 @@ watch(
         </div>
 
         <button type="button" class="mobile-toggle" @click="toggleMobileMenu">
-          <el-icon v-if="!isMobileMenuOpen"><Menu /></el-icon>
-          <el-icon v-else><Close /></el-icon>
+          <span class="icon-svg" v-if="!isMobileMenuOpen">☰</span>
+          <span class="icon-svg" v-else>✕</span>
         </button>
       </div>
     </div>
@@ -170,7 +188,7 @@ watch(
             <p>{{ userProfile.email || '欢迎回来，继续您的诊断工作。' }}</p>
           </div>
         </div>
-        <el-button type="danger" plain @click="handleLogout">退出登录</el-button>
+        <button class="btn-danger btn-outline" @click="handleLogout">退出登录</button>
       </template>
 
       <template v-else>
@@ -397,6 +415,65 @@ watch(
   margin: 4px 0 0;
   color: var(--td-text-muted);
   font-size: 13px;
+}
+
+.icon-svg {
+  font-size: 16px;
+}
+
+.custom-dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: var(--td-surface);
+  border: 1px solid var(--td-border-color);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  min-width: 180px;
+  padding: 8px 0;
+  z-index: 100;
+}
+
+.dropdown-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  color: var(--td-text-main);
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.dropdown-item:not(.disabled):hover {
+  background: var(--td-primary-soft);
+  color: var(--td-primary-700);
+}
+
+.dropdown-item.disabled {
+  color: var(--td-text-muted);
+  cursor: default;
+  font-size: 13px;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--td-border-color);
+  margin: 6px 0;
+}
+
+.btn-danger.btn-outline {
+  width: 100%;
+  background: transparent;
+  color: var(--td-danger-500);
+  border: 1px solid var(--td-danger-500);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 8px;
 }
 
 @media (max-width: 900px) {

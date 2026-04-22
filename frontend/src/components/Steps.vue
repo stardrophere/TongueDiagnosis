@@ -56,7 +56,11 @@ onBeforeUnmount(() => {
 <template>
   <div class="progress-card">
     <div class="progress-ring">
-      <el-progress type="dashboard" :percentage="progress" :stroke-width="10" color="#1f8a70" />
+      <svg class="progress-svg" viewBox="0 0 100 100">
+        <circle class="progress-bg" cx="50" cy="50" r="40"></circle>
+        <circle class="progress-bar" cx="50" cy="50" r="40" :stroke-dashoffset="251 - (251 * progress) / 100"></circle>
+      </svg>
+      <div class="progress-text">{{ Math.round(progress) }}%</div>
     </div>
     <div class="progress-copy">
       <strong>图像分析处理中</strong>
@@ -75,6 +79,44 @@ onBeforeUnmount(() => {
   border-radius: 22px;
   background: var(--td-panel-bg);
   border: 1px solid var(--td-border-color);
+}
+
+.progress-ring {
+  flex-shrink: 0;
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+.progress-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.progress-bg {
+  fill: none;
+  stroke: var(--td-border-color);
+  stroke-width: 8;
+}
+
+.progress-bar {
+  fill: none;
+  stroke: var(--td-primary-500);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 251;
+  transition: stroke-dashoffset 0.3s ease;
+}
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--td-text-main);
 }
 
 .progress-ring {

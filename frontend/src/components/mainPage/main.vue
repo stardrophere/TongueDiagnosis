@@ -338,6 +338,19 @@ onBeforeUnmount(() => {
 
 .message-content {
   padding: 0;
+  border-radius: 12px;
+  background: transparent !important;
+  color: inherit !important;
+}
+
+.markdown-body {
+  background-color: transparent !important;
+  color: inherit !important;
+  font-family: inherit !important;
+}
+
+.markdown-body pre, .markdown-body code {
+  border-radius: 8px;
 }
 
 .think-panel {

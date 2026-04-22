@@ -94,40 +94,167 @@ onMounted(function () {
 </script>
 
 <template>
-  <div class="card" v-for="item in rec" :key="rec.id" v-if="isEmpty === true">
-    <el-descriptions
-        title="Result"
-        direction="vertical"
-        :column="4"
-        :size="size"
-        border
-    >
-      <el-descriptions-item label="图片" width="450px">
-        <el-tag size="small"><a :href=item.img_src>click to view</a></el-tag>
-      </el-descriptions-item>
-      <el-descriptions-item label="检测结果" v-if="item.state === 0">
-        Please wait while the test is being conducted.
-      </el-descriptions-item>
-      <el-descriptions-item label="检测结果" v-if="item.state === 1">
-        {{ color[item.result.tongue_color] }}{{ outcolor[item.result.coating_color] }}{{ rot[item.result.rot_greasy] }}{{ thick[item.result.tongue_thickness] }}
-      </el-descriptions-item>
-      <el-descriptions-item label="检测结果" v-if="item.state === 201">
-        No tongue image was detected. Please re-upload a clear tongue image.
-      </el-descriptions-item>
-      <el-descriptions-item label="检测结果" v-if="item.state === 202">
-        There are multiple tongue images, please take new photos and upload them.
-      </el-descriptions-item>
-      <el-descriptions-item label="检测结果" v-if="item.state === 203">
-        The file type is incorrect. Please check and re-upload.
-      </el-descriptions-item>
-    </el-descriptions>
+  <div v-if="isEmpty === true" class="results-container">
+    <div class="card panel-surface" v-for="item in rec" :key="item.id || item.img_src">
+      <div class="result-header">
+        <h3>Result</h3>
+      </div>
+      
+      <div class="result-grid">
+        <div class="result-item img-col">
+          <div class="label">图片</div>
+          <div class="value">
+            <a :href="item.img_src" target="_blank" class="tag-link">click to view</a>
+          </div>
+        </div>
+        
+        <div class="result-item text-col">
+          <div class="label">检测结果</div>
+          <div class="value">
+            <span v-if="item.state === 0" class="text-pending">
+              Please wait while the test is being conducted.
+            </span>
+            <span v-if="item.state === 1" class="text-success">
+              {{ color[item.result.tongue_color] }} {{ outcolor[item.result.coating_color] }} {{ rot[item.result.rot_greasy] }} {{ thick[item.result.tongue_thickness] }}
+            </span>
+            <span v-if="item.state === 201" class="text-error">
+              No tongue image was detected. Please re-upload a clear tongue image.
+            </span>
+            <span v-if="item.state === 202" class="text-error">
+              There are multiple tongue images, please take new photos and upload them.
+            </span>
+            <span v-if="item.state === 203" class="text-error">
+              The file type is incorrect. Please check and re-upload.
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div v-else><h1 class="nores">No test results yet.</h1></div>
+  <div v-else class="empty-state-container">
+    <h1 class="nores">No test results yet.</h1>
+  </div>
 </template>
 
-<style>
+<style scoped>
+.results-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.panel-surface {
+  border: 1px solid var(--td-border-color);
+  background: var(--td-panel-bg);
+  border-radius: 16px;
+  box-shadow: var(--td-soft-shadow);
+  overflow: hidden;
+}
+
+.result-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--td-border-color);
+  background: var(--td-surface);
+}
+
+.result-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--td-text-main);
+  font-weight: 600;
+}
+
+.result-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+.result-item {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--td-border-color);
+}
+
+.result-item:last-child {
+  border-bottom: none;
+}
+
+.label {
+  width: 120px;
+  padding: 16px 20px;
+  background: var(--td-surface);
+  color: var(--td-text-secondary);
+  font-weight: 500;
+  font-size: 14px;
+  border-right: 1px solid var(--td-border-color);
+  flex-shrink: 0;
+}
+
+.value {
+  padding: 16px 20px;
+  color: var(--td-text-main);
+  font-size: 14px;
+  flex: 1;
+}
+
+.tag-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--td-primary-soft);
+  color: var(--td-primary-700);
+  text-decoration: none;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.tag-link:hover {
+  background: var(--td-primary-100);
+}
+
+.text-pending {
+  color: var(--td-warning-500);
+}
+
+.text-success {
+  color: var(--td-success-600);
+}
+
+.text-error {
+  color: var(--td-danger-500);
+}
+
+.empty-state-container {
+  padding: 40px;
+  display: flex;
+  justify-content: center;
+}
+
 .nores {
   text-align: center;
-  color: #00bd7e;
+  color: var(--td-primary-500);
+  font-size: 24px;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .result-grid {
+    flex-direction: row;
+  }
+  .result-item {
+    border-bottom: none;
+    border-right: 1px solid var(--td-border-color);
+  }
+  .result-item:last-child {
+    border-right: none;
+  }
+  .img-col {
+    width: 35%;
+  }
+  .text-col {
+    flex: 1;
+  }
 }
 </style>

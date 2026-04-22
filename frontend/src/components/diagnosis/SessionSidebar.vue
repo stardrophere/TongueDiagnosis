@@ -54,7 +54,7 @@ function handleDraftNameChange(value) {
         <h2>管理您的舌诊会话</h2>
         <p class="sidebar-desc">新建记录后上传图片，即可自动生成首轮分析并继续追问。</p>
       </div>
-      <el-button type="primary" round @click="emit('create-draft')">新建诊断</el-button>
+      <button type="button" class="btn-primary btn-round" @click="emit('create-draft')">新建诊断</button>
     </div>
 
     <div v-if="hasDraft" class="draft-editor panel-surface">
@@ -62,11 +62,12 @@ function handleDraftNameChange(value) {
         <span class="draft-badge">未保存草稿</span>
         <span class="draft-tip">上传图片后会自动生成正式记录</span>
       </div>
-      <el-input
+      <input
+        class="form-input"
         v-model="localDraftName"
         placeholder="请输入本次诊断名称"
         maxlength="30"
-        @input="handleDraftNameChange"
+        @input="handleDraftNameChange($event.target.value)"
       />
     </div>
 
@@ -103,7 +104,7 @@ function handleDraftNameChange(value) {
             <strong>{{ session.name }}</strong>
             <small>ID: {{ session.id }}</small>
           </div>
-          <el-icon><ArrowRight /></el-icon>
+          <span class="icon-right">›</span>
         </button>
 
         <button
@@ -187,10 +188,16 @@ function handleDraftNameChange(value) {
 
 .draft-head {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  gap: 12px;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  gap: 8px;
+}
+
+.draft-tip {
+  font-size: 13px;
+  color: var(--td-text-muted);
+  line-height: 1.4;
 }
 
 .draft-badge {
@@ -280,17 +287,21 @@ function handleDraftNameChange(value) {
 .delete-button {
   align-self: center;
   min-width: 64px;
-  padding: 0 10px;
+  height: 40px;
+  padding: 0 12px;
   border: 0;
-  border-radius: 14px;
-  background: rgba(224, 62, 62, 0.12);
+  border-radius: 12px;
+  background: rgba(224, 62, 62, 0.08);
   color: var(--td-danger-500);
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .delete-button:hover:not(:disabled) {
-  background: rgba(224, 62, 62, 0.18);
+  background: rgba(224, 62, 62, 0.15);
+  transform: translateY(-1px);
 }
 
 .delete-button:disabled {
@@ -312,6 +323,46 @@ function handleDraftNameChange(value) {
 
 .sidebar-footer li + li {
   margin-top: 8px;
+}
+
+.btn-primary {
+  background: var(--td-primary-500);
+  color: white;
+  border: none;
+  cursor: pointer;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: 0.2s;
+}
+.btn-primary:hover {
+  background: var(--td-primary-600);
+}
+.btn-round {
+  border-radius: 999px;
+}
+
+.form-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--td-border-color);
+  background: var(--td-surface);
+  color: var(--td-text-main);
+  font-size: 14px;
+  box-sizing: border-box;
+  transition: 0.2s;
+}
+.form-input:focus {
+  outline: none;
+  border-color: var(--td-primary-500);
+}
+
+.icon-right {
+  font-size: 20px;
+  color: var(--td-text-muted);
+  line-height: 1;
 }
 
 @media (max-width: 900px) {
