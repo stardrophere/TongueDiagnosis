@@ -54,8 +54,7 @@ const router = createRouter({
 })
 
 /**
- * 统一管理页面标题与登录态拦截。
- * 这样页面组件可以专注于业务，而不是重复写跳转判断。
+ * 路由守卫：统一管理页面标题与登录态拦截
  */
 router.beforeEach(async (to) => {
   const authStore = useAuthStore()

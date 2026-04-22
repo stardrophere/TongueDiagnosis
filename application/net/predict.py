@@ -1,11 +1,35 @@
 import queue
 import tempfile
+import threading
+from contextlib import contextmanager
+
 import torch
 from PIL import Image
 import numpy as np
+from segment_anything import SamPredictor, sam_model_registry
 from yolov5 import load
-from segment_anything import sam_model_registry,SamPredictor
+
 from application.net.model.resnet import ResNetPredictor
+
+
+@contextmanager
+def temporary_torch_load_kwargs(**default_kwargs):
+    """
+    Provide backwards-compatible torch.load defaults while loading legacy checkpoints.
+    This is applied only during model initialization so we don't change runtime behavior elsewhere.
+    """
+    original_torch_load = torch.load
+
+    def compatible_torch_load(*args, **kwargs):
+        for key, value in default_kwargs.items():
+            kwargs.setdefault(key, value)
+        return original_torch_load(*args, **kwargs)
+
+    torch.load = compatible_torch_load
+    try:
+        yield
+    finally:
+        torch.load = original_torch_load
 
 
 class TonguePredictor:
@@ -29,12 +53,32 @@ class TonguePredictor:
                  ):
         if self._initialized:
             return
-        self.device = torch.device('cpu')
-        self.yolo = load(yolo_path, device='cpu')
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        yolo_device = 0 if self.device.type == "cuda" else "cpu"
+        with temporary_torch_load_kwargs(weights_only=False):
+            self.yolo = load(yolo_path, device=yolo_device)
         self.sam = sam_model_registry["vit_b"](checkpoint=sam_path)
-        self.resnet = ResNetPredictor(resnet_path)
+        self.sam.to(device=self.device)
+        self.resnet = ResNetPredictor(resnet_path, device=self.device)
+        print(f"TonguePredictor using device: {self.device}")
         self.queue = queue.Queue()
+        self.worker_thread = None
         TonguePredictor._initialized = True
+
+    def start_worker(self):
+        """
+        启动单例预测 worker。
+        由于应用生命周期内可能多次获取 `TonguePredictor()` 实例，这里要保证线程只启动一次。
+        """
+        if self.worker_thread and self.worker_thread.is_alive():
+            return
+
+        self.worker_thread = threading.Thread(
+            target=self.main,
+            name="tongue-predict-worker",
+            daemon=True,
+        )
+        self.worker_thread.start()
 
     def __predict(self, img, record_id, fun):
         predict_img = Image.open(img)
@@ -96,6 +140,7 @@ class TonguePredictor:
             tmpfile = tempfile.SpooledTemporaryFile()
             content = img.read()
             tmpfile.write(content)
+            tmpfile.seek(0)
             self.queue.put((tmpfile, record_id, fun))
             img.seek(0)
             return {"code": 0}
@@ -103,9 +148,11 @@ class TonguePredictor:
             return {"code": 3}
 
     def main(self):
+        """
+        常驻预测 worker 主循环。
+        旧实现通过 `queue.empty()` 忙等，会持续空转占用 CPU；现在改为阻塞式 `queue.get()`。
+        """
         while True:
-            if self.queue.empty():
-                continue
             img, record_id, fun = self.queue.get()
             try:
                 self.__predict(img, record_id, fun)

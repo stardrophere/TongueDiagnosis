@@ -2,8 +2,7 @@ import { defineStore } from 'pinia'
 import { appMeta, uploadMaxSizeMb } from '@/config/appConfig'
 
 /**
- * 全局界面与展示偏好状态。
- * 旧版 `stateStore` 承担了过多业务职责，这里将它收敛为“全局 UI 配置”用途。
+ * 全局 UI 状态管理
  */
 export const useStateStore = defineStore('appState', {
   state: () => ({
@@ -15,12 +14,41 @@ export const useStateStore = defineStore('appState', {
     aiAvatarSeed: 'AI',
     enableSpeechInput: typeof window !== 'undefined' && 'webkitSpeechRecognition' in window,
     enableSpeechPlayback: typeof window !== 'undefined' && 'speechSynthesis' in window,
+    isDarkMode: false,
   }),
 
   actions: {
     /**
-     * 自定义用户头像占位文案。
-     * 当前项目未接入真实头像资源时，可以通过种子文案生成首字母头像。
+     * 切换黑白模式并持久化
+     */
+    toggleDarkMode() {
+      this.isDarkMode = !this.isDarkMode
+      if (this.isDarkMode) {
+        document.documentElement.classList.add('dark')
+        localStorage.setItem('theme', 'dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+        localStorage.setItem('theme', 'light')
+      }
+    },
+
+    /**
+     * 初始化黑白模式
+     */
+    initTheme() {
+      const savedTheme = localStorage.getItem('theme')
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+      this.isDarkMode = savedTheme === 'dark' || (!savedTheme && prefersDark)
+      
+      if (this.isDarkMode) {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+    },
+
+    /**
+     * 设置用户头像种子
      */
     setUserAvatarSeed(value) {
       this.userAvatarSeed = value || 'USER'

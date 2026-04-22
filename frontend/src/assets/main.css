@@ -21,6 +21,13 @@
   z-index: 0;
 }
 
+html.dark .app-shell::before {
+  background:
+    radial-gradient(circle at 10% 20%, rgba(31, 138, 112, 0.05), transparent 18%),
+    radial-gradient(circle at 90% 10%, rgba(95, 167, 255, 0.06), transparent 16%),
+    radial-gradient(circle at 70% 80%, rgba(125, 124, 244, 0.05), transparent 18%);
+}
+
 .app-main {
   position: relative;
   z-index: 1;
@@ -86,6 +93,17 @@
 .markdown-body pre {
   border-radius: 14px;
   overflow: auto;
+  background-color: var(--td-surface) !important;
+  border: 1px solid var(--td-border-transparent);
+}
+
+.markdown-body code {
+  background-color: var(--td-surface) !important;
+  color: var(--td-text-main) !important;
+}
+
+html.dark .markdown-body code {
+  background-color: var(--td-surface) !important;
 }
 
 .markdown-body p:first-child {
@@ -94,6 +112,61 @@
 
 .markdown-body p:last-child {
   margin-bottom: 0;
+}
+
+/* 新增 Element Plus 全局组件的深色模式适配 */
+html.dark .el-input__inner,
+html.dark .el-input__wrapper,
+html.dark .el-textarea__inner {
+  background-color: var(--td-surface);
+  box-shadow: 0 0 0 1px var(--td-border-color) inset;
+  color: var(--td-text-main);
+}
+
+html.dark .el-input__inner::placeholder,
+html.dark .el-textarea__inner::placeholder {
+  color: var(--td-text-muted);
+}
+
+html.dark .el-button--default {
+  background-color: var(--td-surface);
+  border-color: var(--td-border-color);
+  color: var(--td-text-main);
+}
+
+html.dark .el-button--default:hover {
+  background-color: var(--td-panel-bg);
+  border-color: var(--td-primary-500);
+  color: var(--td-primary-500);
+}
+
+html.dark .el-button--primary {
+  background-color: var(--td-primary-600);
+  border-color: var(--td-primary-600);
+}
+
+html.dark .el-button--primary:hover {
+  background-color: var(--td-primary-500);
+  border-color: var(--td-primary-500);
+}
+
+html.dark .el-dropdown-menu {
+  background-color: var(--td-surface);
+  border-color: var(--td-border-color);
+}
+
+html.dark .el-dropdown-menu__item {
+  color: var(--td-text-main);
+}
+
+html.dark .el-dropdown-menu__item:hover,
+html.dark .el-dropdown-menu__item:focus {
+  background-color: var(--td-panel-bg);
+  color: var(--td-primary-500);
+}
+
+html.dark .el-form-item__label {
+  color: var(--td-text-main);
 }
 
 @media (max-width: 768px) {

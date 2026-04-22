@@ -1,9 +1,10 @@
 <script setup>
-import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import 'github-markdown-css'
 import 'highlight.js/styles/github.css'
 import { renderMarkdown } from '@/utils/markdown'
 import { useStateStore } from '@/stores/stateStore'
+import { getSpeakableAssistantContent, splitAssistantMessageContent } from '@/utils/chatMessage'
 
 const props = defineProps({
   messages: {
@@ -23,11 +24,17 @@ const props = defineProps({
 const chatContainer = ref(null)
 const stateStore = useStateStore()
 const playingMessageId = ref('')
+const expandedThinking = ref({})
+let currentUtterance = null
 
-/**
- * 每次消息变化后自动滚动到底部，让用户始终看到最新输出。
- * 使用 `nextTick` 是为了确保 DOM 已经完成渲染。
- */
+const decoratedMessages = computed(() =>
+  props.messages.map((message) => ({
+    ...message,
+    assistantParts:
+      message.role === 'assistant' ? splitAssistantMessageContent(message.content || '') : null,
+  })),
+)
+
 async function scrollToBottom() {
   await nextTick()
 
@@ -44,41 +51,75 @@ watch(
   { deep: true, immediate: true },
 )
 
-/**
- * 播放 AI 回复时优先使用浏览器自带语音能力。
- * 如果浏览器不支持，则直接静默返回，不额外抛出脚本异常。
- */
+function stopPlayback() {
+  if (!stateStore.enableSpeechPlayback) {
+    return
+  }
+
+  window.speechSynthesis.cancel()
+  playingMessageId.value = ''
+  currentUtterance = null
+}
+
 function playMessage(message) {
   if (!stateStore.enableSpeechPlayback || message.role !== 'assistant') {
     return
   }
 
-  window.speechSynthesis.cancel()
-  const utterance = new SpeechSynthesisUtterance(message.content)
+  if (playingMessageId.value === message.id) {
+    stopPlayback()
+    return
+  }
+
+  const content = getSpeakableAssistantContent(message.content || '')
+  if (!content) {
+    return
+  }
+
+  stopPlayback()
+
+  const utterance = new SpeechSynthesisUtterance(content)
   utterance.lang = 'zh-CN'
+  currentUtterance = utterance
 
   utterance.onstart = () => {
     playingMessageId.value = message.id
   }
 
   utterance.onend = () => {
-    playingMessageId.value = ''
+    if (currentUtterance === utterance) {
+      playingMessageId.value = ''
+      currentUtterance = null
+    }
   }
 
   utterance.onerror = () => {
-    playingMessageId.value = ''
+    if (currentUtterance === utterance) {
+      playingMessageId.value = ''
+      currentUtterance = null
+    }
   }
 
   window.speechSynthesis.speak(utterance)
 }
 
-/**
- * 离开页面时主动取消语音播放，避免消息在后台继续朗读。
- */
-onBeforeUnmount(() => {
-  if (stateStore.enableSpeechPlayback) {
-    window.speechSynthesis.cancel()
+function isThinkingExpanded(message) {
+  if (Object.prototype.hasOwnProperty.call(expandedThinking.value, message.id)) {
+    return expandedThinking.value[message.id]
   }
+
+  return message.status === 'streaming'
+}
+
+function handleThinkingToggle(messageId, event) {
+  expandedThinking.value = {
+    ...expandedThinking.value,
+    [messageId]: event.target.open,
+  }
+}
+
+onBeforeUnmount(() => {
+  stopPlayback()
 })
 </script>
 
@@ -95,13 +136,15 @@ onBeforeUnmount(() => {
     </header>
 
     <div v-if="mode === 'empty'" class="empty-panel">
-      <h3>准备开始一次新的舌诊分析</h3>
-      <p>点击左侧“新建诊断”创建会话草稿，然后上传舌象图片即可生成首轮分析。</p>
+      <div>
+        <h3>准备开始一次新的舌诊分析</h3>
+        <p>点击左侧“新建诊断”创建会话草稿，然后上传舌象图片即可生成首轮分析。</p>
+      </div>
     </div>
 
     <div v-else ref="chatContainer" class="message-list" v-loading="loading">
       <article
-        v-for="message in messages"
+        v-for="message in decoratedMessages"
         :key="message.id"
         class="message-row"
         :class="message.role === 'user' ? 'is-user' : 'is-assistant'"
@@ -121,6 +164,28 @@ onBeforeUnmount(() => {
             <p>{{ message.content }}</p>
           </div>
 
+          <template v-else-if="message.role === 'assistant' && message.assistantParts?.hasThink">
+            <details
+              class="think-panel"
+              :open="isThinkingExpanded(message)"
+              @toggle="handleThinkingToggle(message.id, $event)"
+            >
+              <summary>
+                {{ message.assistantParts.thinkClosed ? '查看 AI 思考过程' : 'AI 思考中...' }}
+              </summary>
+              <div
+                class="markdown-body think-content"
+                v-html="renderMarkdown(message.assistantParts.thinkContent || '')"
+              />
+            </details>
+
+            <div
+              v-if="message.assistantParts.answerContent"
+              class="markdown-body message-content"
+              v-html="renderMarkdown(message.assistantParts.answerContent)"
+            />
+          </template>
+
           <div
             v-else
             class="markdown-body message-content"
@@ -131,12 +196,12 @@ onBeforeUnmount(() => {
             <span v-if="message.status === 'streaming'" class="message-status">AI 正在持续生成内容...</span>
             <span v-else-if="message.status === 'error'" class="message-status error">本轮回复出现异常</span>
             <button
-              v-if="message.role === 'assistant' && message.content"
+              v-if="message.role === 'assistant' && getSpeakableAssistantContent(message.content || '')"
               type="button"
               class="voice-button"
               @click="playMessage(message)"
             >
-              {{ playingMessageId === message.id ? '朗读中...' : '朗读本条回复' }}
+              {{ playingMessageId === message.id ? '停止朗读' : '朗读本条回复' }}
             </button>
           </div>
         </div>
@@ -149,8 +214,10 @@ onBeforeUnmount(() => {
 .message-shell {
   display: flex;
   flex-direction: column;
-  min-height: 640px;
+  min-height: 0;
+  height: 100%;
   padding: 24px;
+  overflow: hidden;
 }
 
 .message-header {
@@ -159,6 +226,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 18px;
+  flex-shrink: 0;
 }
 
 .panel-label {
@@ -177,11 +245,12 @@ onBeforeUnmount(() => {
 .empty-panel {
   display: grid;
   place-items: center;
-  min-height: 420px;
+  min-height: 0;
+  flex: 1;
   text-align: center;
   border-radius: 24px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(245, 250, 248, 0.95));
-  border: 1px dashed rgba(31, 138, 112, 0.24);
+  background: var(--td-panel-bg);
+  border: 1px dashed var(--td-border-strong);
 }
 
 .empty-panel h3 {
@@ -199,8 +268,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  height: 100%;
-  min-height: 520px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -208,7 +277,7 @@ onBeforeUnmount(() => {
 .message-row {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
+  gap: 16px;
 }
 
 .message-row.is-user {
@@ -218,26 +287,27 @@ onBeforeUnmount(() => {
 .message-avatar {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(31, 138, 112, 0.16), rgba(95, 167, 255, 0.18));
+  background: linear-gradient(135deg, var(--td-primary-soft), rgba(95, 167, 255, 0.18));
   color: var(--td-primary-700);
+  font-size: 16px;
   font-weight: 800;
   flex-shrink: 0;
 }
 
 .message-bubble {
-  width: min(100%, 820px);
-  padding: 18px;
+  max-width: 86%;
+  padding: 20px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.86);
-  border: 1px solid rgba(23, 52, 47, 0.08);
-  box-shadow: 0 12px 24px rgba(22, 74, 62, 0.06);
+  background: var(--td-panel-strong);
+  border: 1px solid var(--td-border-color);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.04);
 }
 
 .is-user .message-bubble {
-  background: linear-gradient(135deg, rgba(31, 138, 112, 0.12), rgba(95, 167, 255, 0.08));
+  background: linear-gradient(135deg, var(--td-primary-soft), rgba(95, 167, 255, 0.08));
 }
 
 .message-meta,
@@ -270,6 +340,31 @@ onBeforeUnmount(() => {
   padding: 0;
 }
 
+.think-panel {
+  margin-bottom: 14px;
+  border: 1px solid rgba(95, 167, 255, 0.18);
+  border-radius: 18px;
+  background: rgba(95, 167, 255, 0.06);
+  overflow: hidden;
+}
+
+.think-panel summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--td-primary-700);
+}
+
+.think-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.think-content {
+  padding: 0 14px 14px;
+}
+
 .image-message {
   display: flex;
   flex-direction: column;
@@ -279,7 +374,7 @@ onBeforeUnmount(() => {
 .image-message img {
   width: min(100%, 280px);
   border-radius: 18px;
-  border: 1px solid rgba(23, 52, 47, 0.08);
+  border: 1px solid var(--td-border-color);
 }
 
 .image-message p {
@@ -297,7 +392,8 @@ onBeforeUnmount(() => {
 
 @media (max-width: 768px) {
   .message-shell {
-    min-height: auto;
+    height: auto;
+    min-height: 420px;
     padding: 18px;
   }
 
@@ -307,6 +403,7 @@ onBeforeUnmount(() => {
 
   .message-bubble {
     width: 100%;
+    max-width: 100%;
   }
 
   .message-footer,

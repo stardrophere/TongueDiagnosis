@@ -41,14 +41,14 @@ let recognition = null
 const canStartImageAnalysis = computed(() => props.canUpload && Boolean(selectedImage.value) && !props.uploading)
 
 /**
- * 选择图片后只在本地暂存，真正发起诊断由用户点击按钮确认。
+ * 暂存选中的图片
  */
 function handleImageSelected(payload) {
   selectedImage.value = payload
 }
 
 /**
- * 草稿模式下点击“开始分析”才会真正触发上传，避免用户刚选错图就立即发请求。
+ * 提交图片并开始分析
  */
 function submitImage() {
   if (!selectedImage.value) {
@@ -60,7 +60,7 @@ function submitImage() {
 }
 
 /**
- * 发送追问前统一做空值清洗，避免把纯空格提交到后端。
+ * 提交追问消息
  */
 function submitMessage() {
   const content = inputValue.value.trim()
@@ -81,8 +81,7 @@ function handleEnter(event) {
 }
 
 /**
- * 初始化浏览器语音识别能力。
- * 当前仅在 Chrome 系内核浏览器中较稳定，因此保留能力检测。
+ * 初始化语音识别 (Web Speech API)
  */
 function ensureRecognition() {
   if (!stateStore.enableSpeechInput || recognition) {
@@ -132,7 +131,7 @@ function toggleSpeechInput() {
 }
 
 /**
- * 上传状态切换时同步控制底部的步骤提示组件，让视觉反馈始终准确。
+ * 暴露方法给父组件控制进度与清理
  */
 defineExpose({
   startProgress() {
@@ -193,6 +192,7 @@ defineExpose({
           :autosize="{ minRows: 3, maxRows: 6 }"
           placeholder="请输入要继续追问的问题，例如：这种舌象通常说明什么体质？后续应如何调理？"
           @keydown="handleEnter"
+          class="custom-textarea"
         />
 
         <div class="composer-actions">
@@ -289,6 +289,16 @@ defineExpose({
   gap: 12px;
 }
 
+:deep(.custom-textarea .el-textarea__inner) {
+  background: var(--td-surface);
+  border-color: var(--td-border-color);
+  color: var(--td-text-main);
+}
+
+:deep(.custom-textarea .el-textarea__inner:focus) {
+  border-color: var(--td-primary-500);
+}
+
 @media (max-width: 768px) {
   .composer-shell {
     padding: 16px;
@@ -308,6 +318,15 @@ defineExpose({
 
   .action-buttons {
     flex-direction: column;
+  }
+
+  .action-buttons .el-button {
+    width: 100%;
+    margin: 0;
+  }
+
+  .action-buttons .el-button + .el-button {
+    margin-top: 12px;
   }
 }
 </style>

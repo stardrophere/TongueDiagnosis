@@ -3,11 +3,14 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
+import { useStateStore } from '@/stores/stateStore'
 import { appMeta } from '@/config/appConfig'
+import { Moon, Sunny } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const stateStore = useStateStore()
 
 const isScrolled = ref(false)
 const isMobileMenuOpen = ref(false)
@@ -18,7 +21,7 @@ const navItems = [
 ]
 
 /**
- * 头部只负责消费登录态，不直接操作底层请求。
+ * 暴露部分计算属性与响应式状态
  */
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const userProfile = computed(() => authStore.profile || {})
@@ -39,8 +42,7 @@ function toggleMobileMenu() {
 }
 
 /**
- * 在应用启动和路由变化后尽量补齐用户资料，
- * 但如果当前没有 token，则不做多余请求。
+ * 静默获取用户资料
  */
 async function ensureProfileSilently() {
   if (!authStore.token) {
@@ -55,7 +57,7 @@ async function ensureProfileSilently() {
 }
 
 /**
- * 退出登录后统一回到登录页，并给出明确提示。
+ * 退出登录并跳转
  */
 function handleLogout() {
   authStore.logout()
@@ -107,6 +109,12 @@ watch(
       </nav>
 
       <div class="header-actions">
+        <!-- 黑白模式切换按钮 -->
+        <button type="button" class="theme-toggle" @click="stateStore.toggleDarkMode" :title="stateStore.isDarkMode ? '切换到浅色模式' : '切换到深色模式'">
+          <el-icon v-if="stateStore.isDarkMode"><Sunny /></el-icon>
+          <el-icon v-else><Moon /></el-icon>
+        </button>
+
         <div v-if="isAuthenticated" class="desktop-profile">
           <el-dropdown trigger="click">
             <button type="button" class="profile-trigger">
@@ -183,17 +191,17 @@ watch(
   z-index: 1000;
   width: min(calc(100% - 24px), var(--td-max-width));
   transform: translateX(-50%);
-  border: 1px solid rgba(255, 255, 255, 0.54);
+  border: 1px solid var(--td-border-color);
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--td-bg-elevated);
   box-shadow: var(--td-header-shadow);
   backdrop-filter: blur(22px);
   transition: 0.25s ease;
 }
 
 .app-header.scrolled {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(31, 138, 112, 0.14);
+  background: var(--td-panel-strong);
+  border-color: var(--td-border-strong);
 }
 
 .header-inner {
@@ -307,7 +315,7 @@ watch(
   width: 38px;
   height: 38px;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(31, 138, 112, 0.18), rgba(95, 167, 255, 0.22));
+  background: linear-gradient(135deg, var(--td-primary-soft), rgba(95, 167, 255, 0.22));
   color: var(--td-primary-700);
   font-weight: 800;
 }
@@ -325,6 +333,24 @@ watch(
 .profile-copy span {
   color: var(--td-text-muted);
   font-size: 12px;
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(31, 138, 112, 0.08);
+  color: var(--td-text-main);
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.theme-toggle:hover {
+  background: rgba(31, 138, 112, 0.15);
 }
 
 .mobile-toggle {

@@ -1,9 +1,6 @@
 import { apiBaseUrl, requestTimeout } from '@/config/appConfig'
 import { http, createAuthHeaders, readJsonLinesStream } from '@/services/http'
 
-/**
- * 获取诊断会话列表。
- */
 export async function fetchDiagnosisSessions() {
   const { data } = await http.get('/model/session', {
     timeout: 40000,
@@ -12,9 +9,6 @@ export async function fetchDiagnosisSessions() {
   return data
 }
 
-/**
- * 获取单个会话的历史记录。
- */
 export async function fetchDiagnosisRecords(sessionId) {
   const { data } = await http.get(`/model/record/${sessionId}`, {
     timeout: 40000,
@@ -23,9 +17,18 @@ export async function fetchDiagnosisRecords(sessionId) {
   return data
 }
 
-/**
- * 发送文字追问，并通过回调把流式 token 持续交给界面层。
- */
+export async function deleteDiagnosisSession(sessionId) {
+  const { data } = await http.delete(`/model/session/${sessionId}`, {
+    timeout: 40000,
+  })
+
+  if (data?.code !== 0) {
+    throw new Error(data?.message || '删除会话失败')
+  }
+
+  return data
+}
+
 export async function streamDiagnosisReply({ sessionId, input, onChunk }) {
   const response = await Promise.race([
     fetch(`${apiBaseUrl}/model/session/${sessionId}`, {
@@ -47,10 +50,6 @@ export async function streamDiagnosisReply({ sessionId, input, onChunk }) {
   await readJsonLinesStream(response, onChunk)
 }
 
-/**
- * 上传舌象图片并创建新会话。
- * 后端会流式返回首轮诊断内容，因此这里和追问接口统一走流式处理。
- */
 export async function streamDiagnosisCreation({ file, sessionName, onChunk }) {
   const formData = new FormData()
   formData.append('file_data', file)

@@ -177,12 +177,12 @@ const advantages = [
 .hero-primary {
   background: linear-gradient(135deg, var(--td-primary-600), var(--td-secondary-500));
   color: #fff;
-  box-shadow: 0 14px 28px rgba(31, 138, 112, 0.18);
+  box-shadow: 0 14px 28px var(--td-primary-soft);
 }
 
 .hero-secondary {
   border: 1px solid var(--td-border-strong);
-  background: rgba(255, 255, 255, 0.58);
+  background: var(--td-surface);
   color: var(--td-primary-700);
 }
 
@@ -241,7 +241,7 @@ const advantages = [
   min-height: 32px;
   padding: 0 12px;
   border-radius: 999px;
-  background: rgba(95, 167, 255, 0.14);
+  background: var(--td-primary-soft);
   color: var(--td-secondary-500);
   font-size: 12px;
   font-weight: 700;
@@ -261,8 +261,8 @@ const advantages = [
 .panel-item {
   padding: 18px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.75);
-  border: 1px solid rgba(31, 138, 112, 0.08);
+  background: var(--td-surface);
+  border: 1px solid var(--td-border-color);
 }
 
 .panel-item h3 {
@@ -333,6 +333,7 @@ const advantages = [
   .hero-primary,
   .hero-secondary {
     width: 100%;
+    margin-left: 0 !important;
   }
 }
 </style>

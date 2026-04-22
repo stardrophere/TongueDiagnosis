@@ -11,7 +11,7 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     /**
-     * 用统一 getter 暴露登录状态，避免组件自己判断 token 是否为空。
+     * 判断当前是否已登录
      */
     isAuthenticated(state) {
       return Boolean(state.token)
@@ -20,8 +20,7 @@ export const useAuthStore = defineStore('auth', {
 
   actions: {
     /**
-     * 登录成功后统一写入 token。
-     * 这样无论是表单页、刷新恢复还是未来第三方登录，都能复用同一套状态入口。
+     * 写入 Token 并持久化
      */
     setToken(token) {
       this.token = token || ''
@@ -43,7 +42,7 @@ export const useAuthStore = defineStore('auth', {
     },
 
     /**
-     * 统一封装密码登录流程。
+     * 密码登录
      */
     async login(payload) {
       const result = await loginByPassword(payload)
@@ -56,7 +55,7 @@ export const useAuthStore = defineStore('auth', {
     },
 
     /**
-     * 统一封装注册流程，页面只负责展示结果。
+     * 密码注册
      */
     async register(payload) {
       return registerByPassword(payload)

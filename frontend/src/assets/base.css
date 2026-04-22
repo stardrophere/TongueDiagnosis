@@ -19,6 +19,7 @@
   --td-text-muted: #6c8f88;
   --td-border-color: rgba(23, 52, 47, 0.08);
   --td-border-strong: rgba(31, 138, 112, 0.18);
+  --td-border-transparent: rgba(23, 52, 47, 0.04);
   --td-page-gradient:
     radial-gradient(circle at top left, rgba(95, 167, 255, 0.18), transparent 35%),
     radial-gradient(circle at 85% 10%, rgba(125, 124, 244, 0.14), transparent 24%),
@@ -30,7 +31,38 @@
   --td-radius-lg: 22px;
   --td-radius-md: 16px;
   --td-radius-sm: 12px;
-  --td-max-width: 1240px;
+  --td-max-width: 1560px;
+}
+
+html.dark {
+  color-scheme: dark;
+  --td-bg: #121514;
+  --td-bg-elevated: rgba(30, 36, 34, 0.74);
+  --td-surface: #1a1e1d;
+  --td-panel-bg: rgba(30, 36, 34, 0.6);
+  --td-panel-strong: rgba(40, 48, 45, 0.85);
+  --td-primary-700: #3aa58f;
+  --td-primary-600: #2b9d84;
+  --td-primary-500: #1f8a70;
+  --td-primary-soft: rgba(58, 165, 143, 0.15);
+  --td-secondary-500: #5fa7ff;
+  --td-accent-500: #8c8bf5;
+  --td-success-500: #29b87f;
+  --td-warning-500: #f5b942;
+  --td-danger-500: #eb6c6c;
+  --td-text-main: #e8f0ee;
+  --td-text-secondary: #a3b8b4;
+  --td-text-muted: #748c88;
+  --td-border-color: rgba(255, 255, 255, 0.08);
+  --td-border-strong: rgba(255, 255, 255, 0.15);
+  --td-border-transparent: rgba(255, 255, 255, 0.04);
+  --td-page-gradient:
+    radial-gradient(circle at top left, rgba(95, 167, 255, 0.1), transparent 35%),
+    radial-gradient(circle at 85% 10%, rgba(125, 124, 244, 0.08), transparent 24%),
+    linear-gradient(180deg, #121514 0%, #161c1a 100%);
+  --td-soft-shadow: 0 18px 48px rgba(0, 0, 0, 0.3);
+  --td-card-shadow: 0 14px 34px rgba(0, 0, 0, 0.4);
+  --td-header-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
 }
 
 *,

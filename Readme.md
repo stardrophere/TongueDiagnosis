@@ -41,9 +41,12 @@
   - ALGORITHMS: Algorithm used for JWT token encoding
   - IMG_PATH: Path to save uploaded tongue images
   - IMG_DB_PATH: Path stored in the database for tongue images
-  - OLLAMA_PATH: Ollama API endpoint
+  - DEEPSEEK_API_KEY: DeepSeek API key
+  - DEEPSEEK_BASE_URL: DeepSeek API base URL
+  - DEEPSEEK_MODEL: DeepSeek chat model name
   - SYSTEM_PROMPT: System prompt for LLM
-  - LLM_NAME: Name of the LLM model to use in Ollama
+  - DEEPSEEK_CONNECT_TIMEOUT: Connection timeout for DeepSeek API
+  - DEEPSEEK_READ_TIMEOUT: Read timeout for DeepSeek API streaming responses
   - APP_PORT: Port for backend server
 - Default configuration:
 ```bash
@@ -52,9 +55,12 @@
     ALGORITHMS: str = "HS256"
     IMG_PATH: str = "frontend/public/tongue"
     IMG_DB_PATH: str = "tongue"
-    OLLAMA_PATH: str = "http://localhost:11434/api/chat"
+    DEEPSEEK_API_KEY: str = ""
+    DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
+    DEEPSEEK_MODEL: str = "deepseek-chat"
     SYSTEM_PROMPT: str = "You are now an AI traditional Chinese medicine doctor specializing in tongue diagnosis. At the very beginning, I will show you four image features of the user's tongue. Please use your knowledge of traditional Chinese medicine to give the user some suggestions. Answer in English"
-    LLM_NAME: str = "deepseek-r1:14b"
+    DEEPSEEK_CONNECT_TIMEOUT: int = 10
+    DEEPSEEK_READ_TIMEOUT: int = 600
     APP_PORT: int = 5000
 ```
 #### Frontend Configuration
@@ -72,7 +78,7 @@ export default settings;
 ### Backend Setup
 Default running port: 5000
 
-Before the following step, you need to install Ollama[https://ollama.com/download]  on the device which will run the backend application.
+Before the following step, create a `.env` file from `.env.example` and fill in `DEEPSEEK_API_KEY`.
 ```bash
 # Clone repository
 git clone https://github.com/TonguePicture-SKaRD/TongueDiagnosis.git

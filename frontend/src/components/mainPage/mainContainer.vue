@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
-import Main from './main.vue'
 import DialogBox from './dialogBox.vue'
+import Main from './main.vue'
 
 const props = defineProps({
   messages: {
@@ -37,10 +37,6 @@ const props = defineProps({
 const emit = defineEmits(['submit-message', 'submit-image', 'request-draft'])
 const dialogRef = ref(null)
 
-/**
- * 上传状态变化时，让底部进度提示组件同步开始或结束。
- * 这个同步放在容器层，避免消息区和输入区互相直接依赖。
- */
 watch(
   () => props.uploading,
   (uploading) => {
@@ -56,9 +52,10 @@ watch(
 
 <template>
   <div class="workspace-column">
-    <Main :messages="messages" :mode="mode" :loading="loading" />
+    <Main class="message-panel" :messages="messages" :mode="mode" :loading="loading" />
     <DialogBox
       ref="dialogRef"
+      class="composer-panel"
       :mode="mode"
       :can-send="canSend"
       :can-upload="canUpload"
@@ -77,5 +74,16 @@ watch(
   flex-direction: column;
   gap: 18px;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.message-panel {
+  flex: 1;
+  min-height: 0;
+}
+
+.composer-panel {
+  flex-shrink: 0;
 }
 </style>

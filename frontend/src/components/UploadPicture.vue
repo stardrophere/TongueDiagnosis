@@ -6,8 +6,7 @@ import { uploadMaxSizeMb } from '@/config/appConfig'
 const emit = defineEmits(['selected'])
 
 /**
- * 上传组件只负责挑选与预览，不直接发请求。
- * 这样诊断页可以统一控制“何时开始分析”和错误提示策略。
+ * 校验并预览选中的图片文件
  */
 function handleFileChange(uploadFile) {
   const file = uploadFile.raw
@@ -74,9 +73,9 @@ function handleFileChange(uploadFile) {
 ::deep(.el-upload-dragger) {
   display: flex;
   min-height: 188px;
-  border: 1px dashed rgba(31, 138, 112, 0.35);
+  border: 1px dashed var(--td-border-strong);
   border-radius: 24px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(244, 251, 248, 0.96));
+  background: var(--td-panel-strong);
   flex-direction: column;
   justify-content: center;
   align-items: center;

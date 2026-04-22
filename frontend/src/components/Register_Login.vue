@@ -25,7 +25,7 @@ const registerForm = reactive({
 })
 
 /**
- * 登录和注册共用邮箱校验规则，避免两套表单分别维护同一段逻辑。
+ * 校验邮箱格式
  */
 function validateEmail(_rule, value, callback) {
   const email = String(value || '').trim()
@@ -45,7 +45,7 @@ function validateEmail(_rule, value, callback) {
 }
 
 /**
- * 密码最少 6 位，并限制为英文/数字组合，尽量与现有后端兼容。
+ * 校验密码格式
  */
 function validatePassword(_rule, value, callback) {
   const password = String(value || '')
@@ -75,7 +75,7 @@ function validatePassword(_rule, value, callback) {
 }
 
 /**
- * 注册时二次确认密码，防止用户输入错误后直接提交。
+ * 校验二次密码是否一致
  */
 function validateConfirmPassword(_rule, value, callback) {
   if (!value) {
@@ -107,7 +107,7 @@ const currentForm = computed(() => (activeTab.value === 'login' ? loginForm : re
 const redirectPath = computed(() => String(route.query.redirect || '/check'))
 
 /**
- * 路由和页签保持同步，方便用户刷新页面后仍停留在正确的认证模式。
+ * 切换登录/注册页签
  */
 function switchTab(tab) {
   activeTab.value = tab
@@ -131,7 +131,7 @@ watch(
 )
 
 /**
- * 根据后端业务码给出更准确的中文反馈，而不是一律提示“失败”。
+ * 解析后端认证错误信息
  */
 function resolveAuthMessage(result, mode) {
   if (mode === 'login') {
@@ -154,7 +154,7 @@ function resolveAuthMessage(result, mode) {
 }
 
 /**
- * 登录成功后优先拉取用户资料，再跳转回目标页面。
+ * 处理登录表单提交
  */
 async function handleLogin() {
   const valid = await formRef.value.validate().catch(() => false)
@@ -187,7 +187,7 @@ async function handleLogin() {
 }
 
 /**
- * 注册成功后不直接强制跳转工作台，而是回到登录页让用户完成显式登录。
+ * 处理注册表单提交
  */
 async function handleRegister() {
   const valid = await formRef.value.validate().catch(() => false)
@@ -223,7 +223,7 @@ async function handleRegister() {
 }
 
 /**
- * 提交入口统一根据当前页签切换，模板层只保留一个按钮事件。
+ * 统一提交入口
  */
 function handleSubmit() {
   if (activeTab.value === 'login') {
@@ -409,7 +409,7 @@ function handleSubmit() {
   display: inline-flex;
   padding: 4px;
   border-radius: 999px;
-  background: rgba(31, 138, 112, 0.08);
+  background: var(--td-primary-soft);
 }
 
 .tab-button {
@@ -424,9 +424,9 @@ function handleSubmit() {
 }
 
 .tab-button.active {
-  background: #fff;
+  background: var(--td-surface);
   color: var(--td-primary-700);
-  box-shadow: 0 8px 16px rgba(31, 138, 112, 0.1);
+  box-shadow: 0 8px 16px var(--td-primary-soft);
 }
 
 .auth-form {

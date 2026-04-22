@@ -22,10 +22,13 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  deletingSessionId: {
+    type: [String, Number, null],
+    default: null,
+  },
 })
 
-const emit = defineEmits(['create-draft', 'select-session', 'update-draft-name'])
-
+const emit = defineEmits(['create-draft', 'select-session', 'update-draft-name', 'delete-session'])
 const localDraftName = ref(props.draftSessionName)
 
 watch(
@@ -36,15 +39,8 @@ watch(
   { immediate: true },
 )
 
-/**
- * 统一判断侧栏当前是否应该显示空状态。
- */
 const isEmpty = computed(() => !props.loading && !props.hasDraft && props.sessions.length === 0)
 
-/**
- * 草稿名称变化时同步通知父层。
- * 由父层决定是否更新欢迎消息和默认标题。
- */
 function handleDraftNameChange(value) {
   emit('update-draft-name', value)
 }
@@ -91,20 +87,34 @@ function handleDraftNameChange(value) {
         </div>
       </div>
 
-      <button
+      <div
         v-for="session in sessions"
         :key="session.id"
-        type="button"
-        class="session-item"
+        class="session-entry"
         :class="{ active: activeSessionId === session.id }"
-        @click="emit('select-session', session.id)"
       >
-        <div class="session-meta">
-          <strong>{{ session.name }}</strong>
-          <small>ID: {{ session.id }}</small>
-        </div>
-        <el-icon><ArrowRight /></el-icon>
-      </button>
+        <button
+          type="button"
+          class="session-item"
+          :class="{ active: activeSessionId === session.id }"
+          @click="emit('select-session', session.id)"
+        >
+          <div class="session-meta">
+            <strong>{{ session.name }}</strong>
+            <small>ID: {{ session.id }}</small>
+          </div>
+          <el-icon><ArrowRight /></el-icon>
+        </button>
+
+        <button
+          type="button"
+          class="delete-button"
+          :disabled="deletingSessionId === session.id"
+          @click.stop="emit('delete-session', session.id)"
+        >
+          {{ deletingSessionId === session.id ? '删除中...' : '删除' }}
+        </button>
+      </div>
 
       <div v-if="isEmpty" class="empty-state">
         <p>还没有任何诊断记录。</p>
@@ -130,6 +140,8 @@ function handleDraftNameChange(value) {
   gap: 16px;
   width: 320px;
   min-width: 280px;
+  height: 100%;
+  min-height: 0;
 }
 
 .panel-surface {
@@ -186,7 +198,7 @@ function handleDraftNameChange(value) {
   align-items: center;
   padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(31, 138, 112, 0.12);
+  background: var(--td-primary-soft);
   color: var(--td-primary-700);
   font-size: 12px;
   font-weight: 600;
@@ -194,7 +206,8 @@ function handleDraftNameChange(value) {
 
 .session-list {
   flex: 1;
-  min-height: 320px;
+  min-height: 0;
+  overflow-y: auto;
   padding: 14px;
   display: flex;
   flex-direction: column;
@@ -221,6 +234,13 @@ function handleDraftNameChange(value) {
   font-size: 12px;
 }
 
+.session-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: stretch;
+}
+
 .session-item {
   display: flex;
   justify-content: space-between;
@@ -237,14 +257,14 @@ function handleDraftNameChange(value) {
 }
 
 .session-item:hover {
-  border-color: rgba(31, 138, 112, 0.25);
+  border-color: var(--td-primary-soft);
   transform: translateY(-1px);
 }
 
 .session-item.active {
-  border-color: rgba(31, 138, 112, 0.35);
-  background: linear-gradient(135deg, rgba(31, 138, 112, 0.12), rgba(95, 167, 255, 0.1));
-  box-shadow: inset 0 0 0 1px rgba(31, 138, 112, 0.15);
+  border-color: var(--td-primary-500);
+  background: var(--td-primary-soft);
+  box-shadow: inset 0 0 0 1px var(--td-primary-soft);
 }
 
 .draft-item {
@@ -257,11 +277,32 @@ function handleDraftNameChange(value) {
   gap: 4px;
 }
 
+.delete-button {
+  align-self: center;
+  min-width: 64px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(224, 62, 62, 0.12);
+  color: var(--td-danger-500);
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.delete-button:hover:not(:disabled) {
+  background: rgba(224, 62, 62, 0.18);
+}
+
+.delete-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
 .empty-state {
   padding: 32px 20px;
   text-align: center;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--td-panel-bg);
 }
 
 .sidebar-footer ul {
@@ -273,10 +314,15 @@ function handleDraftNameChange(value) {
   margin-top: 8px;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 900px) {
   .session-sidebar {
     width: 100%;
     min-width: 0;
+    height: auto;
+  }
+
+  .session-list {
+    max-height: 320px;
   }
 }
 </style>

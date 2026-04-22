@@ -115,8 +115,8 @@ def ResNet50(num_classes=2, if_se=False):
 
 
 class ResNetPredictor:
-    def __init__(self, path: list, tasks: list = [5, 3, 2, 2]):
-        self.device = 'cpu'
+    def __init__(self, path: list, tasks: list = [5, 3, 2, 2], device=None):
+        self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
         self.nets = []
         self.transform = transforms.Compose(
             [transforms.ToTensor(), transforms.Normalize(mean=[0.29, 0.22, 0.23], std=[0.34, 0.27, 0.28])])

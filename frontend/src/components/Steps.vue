@@ -19,8 +19,7 @@ const statusText = computed(() => {
 })
 
 /**
- * 上传开始时启动进度提示。
- * 这里只做体验层模拟，不代表后端真实进度。
+ * 启动模拟进度动画
  */
 function start() {
   stop()
@@ -35,7 +34,7 @@ function start() {
 }
 
 /**
- * 结束当前进度动画，避免组件卸载后仍持续计时。
+ * 停止模拟进度动画
  */
 function stop() {
   if (timer) {
@@ -74,8 +73,8 @@ onBeforeUnmount(() => {
   gap: 18px;
   padding: 18px;
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.76);
-  border: 1px solid rgba(31, 138, 112, 0.1);
+  background: var(--td-panel-bg);
+  border: 1px solid var(--td-border-color);
 }
 
 .progress-ring {

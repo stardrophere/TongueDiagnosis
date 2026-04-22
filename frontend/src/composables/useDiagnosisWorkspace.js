@@ -1,8 +1,15 @@
 import { computed, ref } from 'vue'
-import { ElMessage } from 'element-plus'
-import { fetchDiagnosisRecords, fetchDiagnosisSessions, streamDiagnosisCreation, streamDiagnosisReply } from '@/services/diagnosis'
-import { formatDateTime, createSessionName } from '@/utils/formatters'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import {
+  deleteDiagnosisSession,
+  fetchDiagnosisRecords,
+  fetchDiagnosisSessions,
+  streamDiagnosisCreation,
+  streamDiagnosisReply,
+} from '@/services/diagnosis'
 import { useStateStore } from '@/stores/stateStore'
+import { parseStoredImageMessage } from '@/utils/chatMessage'
+import { createSessionName, formatDateTime } from '@/utils/formatters'
 
 function createMessage({
   id = `${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -32,13 +39,24 @@ function normalizeSessions(rawList = []) {
 }
 
 function normalizeRecords(rawRecords = []) {
-  return rawRecords.map((item) =>
-    createMessage({
+  return rawRecords.map((item) => {
+    const imagePayload = parseStoredImageMessage(item.content || '')
+    if (imagePayload) {
+      return createMessage({
+        role: 'user',
+        type: 'image',
+        content: imagePayload.text || '已上传舌象图片，请开始分析。',
+        previewUrl: imagePayload.preview_url,
+        createdAt: item.create_at || Date.now(),
+      })
+    }
+
+    return createMessage({
       role: Number(item.role) === 1 ? 'user' : 'assistant',
       content: item.content || '',
       createdAt: item.create_at || Date.now(),
-    }),
-  )
+    })
+  })
 }
 
 export function useDiagnosisWorkspace() {
@@ -54,10 +72,17 @@ export function useDiagnosisWorkspace() {
   const loadingMessages = ref(false)
   const uploadingImage = ref(false)
   const streamingReply = ref(false)
+  const deletingSessionId = ref(null)
   const sessionCache = ref({})
 
   const hasActiveSession = computed(() => Boolean(activeSessionId.value))
-  const isBusy = computed(() => loadingMessages.value || uploadingImage.value || streamingReply.value)
+  const isBusy = computed(
+    () =>
+      loadingMessages.value ||
+      uploadingImage.value ||
+      streamingReply.value ||
+      Boolean(deletingSessionId.value),
+  )
   const canUploadImage = computed(() => hasDraft.value && !uploadingImage.value && !streamingReply.value)
   const canSendMessage = computed(() => hasActiveSession.value && !streamingReply.value)
   const workspaceMode = computed(() => {
@@ -72,10 +97,6 @@ export function useDiagnosisWorkspace() {
     return 'empty'
   })
 
-  /**
-   * 创建系统欢迎消息。
-   * 在新建草稿时展示清晰的拍摄提示与风险声明，提升首次使用体验。
-   */
   function createGuideMessage(sessionName = draftSessionName.value) {
     return createMessage({
       role: 'assistant',
@@ -85,9 +106,9 @@ export function useDiagnosisWorkspace() {
         '请先上传一张清晰的舌象图片，我会基于图像分析给出第一轮智能解读。',
         '',
         '## 拍摄建议',
-        '1. 尽量在自然光下拍摄，避免滤镜与强烈阴影。',
+        '1. 尽量在自然光下拍摄，避免滤镜和强烈阴影。',
         '2. 镜头尽量正对舌面，保持画面清晰、不模糊。',
-        '3. 拍摄前避免刚进食、饮色素饮料或口红影响舌象判断。',
+        '3. 拍摄前避免刚进食、饮有色饮料或口红影响舌象判断。',
         '',
         '## 使用提醒',
         '本系统结果仅用于健康参考，不能替代专业医生面诊与正式诊断。',
@@ -95,9 +116,60 @@ export function useDiagnosisWorkspace() {
     })
   }
 
-  /**
-   * 读取会话列表，并尽量保持当前选中项不丢失。
-   */
+  function syncCurrentMessagesToCache() {
+    if (!activeSessionId.value) {
+      return
+    }
+
+    sessionCache.value = {
+      ...sessionCache.value,
+      [activeSessionId.value]: [...activeMessages.value],
+    }
+  }
+
+  function appendUserMessage(content, options = {}) {
+    activeMessages.value = [
+      ...activeMessages.value,
+      createMessage({
+        role: 'user',
+        content,
+        type: options.type || 'text',
+        previewUrl: options.previewUrl || '',
+      }),
+    ]
+  }
+
+  function appendStreamingAssistantMessage() {
+    const message = createMessage({
+      role: 'assistant',
+      content: '',
+      status: 'streaming',
+    })
+
+    activeMessages.value = [...activeMessages.value, message]
+    return message.id
+  }
+
+  function patchAssistantMessage(messageId, patch) {
+    activeMessages.value = activeMessages.value.map((item) => {
+      if (item.id !== messageId) {
+        return item
+      }
+
+      return {
+        ...item,
+        ...patch,
+      }
+    })
+  }
+
+  function clearDraft() {
+    hasDraft.value = false
+    activeSessionId.value = null
+    activeSessionName.value = ''
+    activeMessages.value = []
+  }
+
   async function loadSessions() {
     loadingSessions.value = true
 
@@ -116,10 +188,6 @@ export function useDiagnosisWorkspace() {
     }
   }
 
-  /**
-   * 切换到新的草稿态。
-   * 草稿态代表“还没有真正创建后端会话，但用户已经准备开始一次新诊断”。
-   */
   function createDraft(name = createSessionName(stateStore.defaultSessionPrefix)) {
     activeSessionId.value = null
     activeSessionName.value = ''
@@ -128,9 +196,6 @@ export function useDiagnosisWorkspace() {
     activeMessages.value = [createGuideMessage(name)]
   }
 
-  /**
-   * 草稿名称允许在左侧列表实时修改，这里同步更新欢迎语标题。
-   */
   function updateDraftName(name) {
     draftSessionName.value = name || createSessionName(stateStore.defaultSessionPrefix)
 
@@ -139,12 +204,8 @@ export function useDiagnosisWorkspace() {
     }
   }
 
-  /**
-   * 打开已有会话时优先读缓存，减少重复请求与切换闪烁。
-   */
   async function openSession(sessionId) {
     const target = sessions.value.find((item) => item.id === sessionId)
-
     if (!target) {
       return
     }
@@ -176,73 +237,6 @@ export function useDiagnosisWorkspace() {
     }
   }
 
-  /**
-   * 把当前显示消息回写到缓存。
-   * 这样在流式输出过程中切换会话，也不会丢失当前已经收到的内容。
-   */
-  function syncCurrentMessagesToCache() {
-    if (!activeSessionId.value) {
-      return
-    }
-
-    sessionCache.value = {
-      ...sessionCache.value,
-      [activeSessionId.value]: [...activeMessages.value],
-    }
-  }
-
-  /**
-   * 统一追加用户消息，保持消息结构一致。
-   */
-  function appendUserMessage(content, options = {}) {
-    activeMessages.value = [
-      ...activeMessages.value,
-      createMessage({
-        role: 'user',
-        content,
-        type: options.type || 'text',
-        previewUrl: options.previewUrl || '',
-      }),
-    ]
-  }
-
-  /**
-   * 统一创建一个“正在生成”的 AI 消息占位，便于后续持续拼接 token。
-   */
-  function appendStreamingAssistantMessage() {
-    const message = createMessage({
-      role: 'assistant',
-      content: '',
-      status: 'streaming',
-    })
-
-    activeMessages.value = [...activeMessages.value, message]
-    return message.id
-  }
-
-  /**
-   * 追加流式 token 到最后一条 AI 消息。
-   */
-  function patchAssistantMessage(messageId, patch) {
-    activeMessages.value = activeMessages.value.map((item) => {
-      if (item.id !== messageId) {
-        return item
-      }
-
-      return {
-        ...item,
-        ...patch,
-      }
-    })
-  }
-
-  /**
-   * 上传图片并创建新的诊断会话。
-   * 这里同时承担三件事：
-   * 1. 在界面中立即展示用户上传的图片；
-   * 2. 监听后端流式返回，实时渲染首轮诊断内容；
-   * 3. 在拿到 session_id 后，把草稿正式转成可持久化会话。
-   */
   async function submitImage(file, previewUrl) {
     if (!hasDraft.value) {
       createDraft()
@@ -265,7 +259,8 @@ export function useDiagnosisWorkspace() {
         file,
         sessionName: draftSessionName.value,
         onChunk: (chunk) => {
-          const currentText = activeMessages.value.find((item) => item.id === assistantMessageId)?.content || ''
+          const currentText =
+            activeMessages.value.find((item) => item.id === assistantMessageId)?.content || ''
 
           if (chunk.session_id && !activeSessionId.value) {
             activeSessionId.value = chunk.session_id
@@ -282,6 +277,7 @@ export function useDiagnosisWorkspace() {
               content: currentText + chunk.token,
               status: 'streaming',
             })
+            syncCurrentMessagesToCache()
           }
         },
       })
@@ -307,13 +303,8 @@ export function useDiagnosisWorkspace() {
     }
   }
 
-  /**
-   * 向当前会话发送追问。
-   * 仅在已有有效 session_id 的情况下允许发送，防止后端收到非法请求。
-   */
   async function submitMessage(text) {
     const content = String(text || '').trim()
-
     if (!content) {
       return
     }
@@ -333,7 +324,8 @@ export function useDiagnosisWorkspace() {
         sessionId: activeSessionId.value,
         input: content,
         onChunk: (chunk) => {
-          const currentText = activeMessages.value.find((item) => item.id === assistantMessageId)?.content || ''
+          const currentText =
+            activeMessages.value.find((item) => item.id === assistantMessageId)?.content || ''
 
           if (chunk.token) {
             patchAssistantMessage(assistantMessageId, {
@@ -365,14 +357,51 @@ export function useDiagnosisWorkspace() {
     }
   }
 
-  /**
-   * 删除本地缓存的草稿并回到空状态。
-   */
-  function clearDraft() {
-    hasDraft.value = false
-    activeSessionId.value = null
-    activeSessionName.value = ''
-    activeMessages.value = []
+  async function deleteSession(sessionId) {
+    const target = sessions.value.find((item) => item.id === sessionId)
+    if (!target || deletingSessionId.value) {
+      return
+    }
+
+    try {
+      await ElMessageBox.confirm(
+        `删除“${target.name}”后，聊天记录和上传图片都会被移除。确认继续吗？`,
+        '删除会话',
+        {
+          confirmButtonText: '删除',
+          cancelButtonText: '取消',
+          type: 'warning',
+        },
+      )
+    } catch {
+      return
+    }
+
+    deletingSessionId.value = sessionId
+
+    try {
+      await deleteDiagnosisSession(sessionId)
+
+      sessions.value = sessions.value.filter((item) => item.id !== sessionId)
+      const nextCache = { ...sessionCache.value }
+      delete nextCache[sessionId]
+      sessionCache.value = nextCache
+
+      if (activeSessionId.value === sessionId) {
+        if (sessions.value.length > 0) {
+          await openSession(sessions.value[0].id)
+        } else {
+          clearDraft()
+        }
+      }
+
+      ElMessage.success('会话已删除。')
+    } catch (error) {
+      console.error(error)
+      ElMessage.error(error.message || '删除会话失败，请稍后重试。')
+    } finally {
+      deletingSessionId.value = null
+    }
   }
 
   return {
@@ -386,6 +415,7 @@ export function useDiagnosisWorkspace() {
     loadingMessages,
     uploadingImage,
     streamingReply,
+    deletingSessionId,
     workspaceMode,
     isBusy,
     canUploadImage,
@@ -397,5 +427,6 @@ export function useDiagnosisWorkspace() {
     openSession,
     submitImage,
     submitMessage,
+    deleteSession,
   }
 }

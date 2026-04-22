@@ -3,8 +3,7 @@ import { ElMessage } from 'element-plus'
 import { apiBaseUrl, requestTimeout } from '@/config/appConfig'
 
 /**
- * 统一 axios 实例。
- * 所有普通 HTTP 请求都应走这里，便于统一注入 token、处理超时和 401。
+ * 统一 axios 实例
  */
 export const http = axios.create({
   baseURL: apiBaseUrl,
@@ -12,7 +11,7 @@ export const http = axios.create({
 })
 
 /**
- * 请求前自动附带 token，避免每个调用方手写 Authorization 头。
+ * 请求拦截器：注入 token
  */
 http.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
@@ -26,8 +25,7 @@ http.interceptors.request.use((config) => {
 })
 
 /**
- * 响应拦截器只负责兜底处理全局错误。
- * 业务层如果有更细粒度提示，可以继续在调用处追加 try/catch。
+ * 响应拦截器：处理全局错误
  */
 http.interceptors.response.use(
   (response) => response,

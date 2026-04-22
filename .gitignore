@@ -1,4 +1,8 @@
 venv
+.env
+.env.local
+.env.*
+!.env.example
 .idea
 frontend/node_modules
 __pycache__
